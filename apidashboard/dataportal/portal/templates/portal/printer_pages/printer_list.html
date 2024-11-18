@@ -1,0 +1,151 @@
+{% extends "template.html" %}
+{% block title %}
+Printers List
+{% endblock %}
+{% block main_content %}
+<main>
+
+    <div id="layoutSidenav_content">
+        <div class="container-fluid px-4">
+            <h1 class="mt-4">Printers List</h1>
+            <ol class="breadcrumb mb-4">
+                <li class="breadcrumb-item"><a href="{% url 'index' %}">Dashboard</a></li>
+                <li class="breadcrumb-item active">Printes list</li>
+            </ol>
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-table me-1"></i>
+                    Add Printer
+                </div>
+                <div class="card-body">
+                    <p> New printers can be added through this portal, there is no need to add the url, just add
+                        your IP
+                        or hostname and the api key.
+
+                        <br>
+
+                        please note that the api key is not the same as the password for the printer.
+                        *: add the domain or IP without http:// or https://
+
+                    </p>
+                    <form action="{% url 'printer_list' %}" method="post">
+                        {% csrf_token %}
+                        <div class="form-floating mb-3 ">
+                            <input class="form-control " id="ip" name="ip_address" type="text" placeholder="1.1.1.1" />
+                            <label for="ip_address">IP</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input class="form-control" id="api" name="api_key" type="text" placeholder="1233456" />
+                            <label for="api_key">API</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary" type="submit">Add Printer </button>
+                        <div class="notification is-danger"> {{error_message}} </div>
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+            <div class="card mb-4 shadow-lg">
+                <div class="card-header">
+                    <i class="fas fa-table me-1"></i>
+                    Printers list
+                </div>
+                <div class="card-body">
+                    <table id="datatablesSimple" class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>IP Address</th>
+                                <th>Control</th>
+                                <th>Delete</th>
+                                <th>Edit</th>
+                                <th>Detail</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for printer in printers %}
+                            <tr>
+                                <td>{{ printer.id }}</td>
+                                <td>{{ printer.ip_address }}</td>
+                                <td>
+                                    <!-- <a href="{% url 'control_printer' printer.id %}">
+                                                <button class="control btn-outline-info btn-sm"> Control</button>
+                                                </a> </td> -->
+
+                                    <!-- Button trigger modal -->
+                                    <button type="button" class="btn-sm btn-primary" data-bs-toggle="modal"
+                                        data-bs-target="#exampleModal">
+                                        Options
+                                    </button>
+                                    <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog"
+                                        aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                        <div class="modal-dialog" role="document">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="row">
+                                                    <div class="col-md-6 ms-auto"><button type="button " class="btn btn-outline-info  "
+                                                        onclick="location.href='{% url 'control_printer' printer.id %}'">
+                                                        Control </button></div>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary"
+                                                        data-bs-dismiss="modal">Close</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                <td>
+                                    <button class="delete btn btn-danger btn-sm"
+                                        onclick="location.href='{% url 'delete_printer' printer.id %}';">
+                                        delete
+                                    </button>
+                                </td>
+                                <td> <button class="edit btn btn-outline-primary btn-sm"
+                                        onclick="location.href='{% url 'edit_printer' printer.id %}';">
+                                        edit
+                                    </button>
+                                </td>
+                                <td>
+                                    <button class="detail btn btn-outline-secondary btn-sm"
+                                        onclick="location.href='{% url 'printer_detail' printer.id %}';">
+                                        detail
+                                    </button>
+                                </td>
+                                <td>
+                                    <a href="{% url 'ping_printer' printer.id %}">
+                                        {% if printer.ping == True %}
+                                        <button class="online btn btn-success btn-sm"> online</button>
+                                        {% else %}
+                                        <button class="offline btn btn-outline-warning btn-sm" disabled>
+                                            offline</button>
+                                        {% endif %}
+
+                                    </a>
+                                </td>
+                            </tr>
+
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+</main>
+</div>
+</div>
+<!-- Modal -->
+
+{% endblock main_content %}
+
+
+</main>

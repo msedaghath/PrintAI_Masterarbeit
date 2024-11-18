@@ -1,0 +1,26 @@
+.fixed-card {
+    width: 300px;  /* or any desired width */
+    height: 400px; /* or any desired height */
+    overflow: hidden; /* to hide content that might overflow */
+    margin: 0 auto; 
+}
+
+.card-content-center {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;  /* Change this to space-between */
+    height: 50%;
+}
+
+.card-buttons-group {
+    width: auto ;
+    display: flex;
+    justify-content: center;
+    margin-top: auto;  /* This pushes the buttons to the bottom */
+
+}
+
+.card-buttons{
+    background-color : #55c2da;
+    border-right: 10px;
+    }

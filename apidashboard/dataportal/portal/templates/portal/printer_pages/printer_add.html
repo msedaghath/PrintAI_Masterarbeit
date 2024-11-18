@@ -1,0 +1,15 @@
+<h1>Add Printer</h1>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" value="Save">
+</form>
+
+<h2>Stored Printers</h2>
+
+<ul>
+    {% for printer in printers %}
+    <li>{{ printer.ip_address }} (API key: {{ printer.api_key }})</li>
+    {% endfor %}
+</ul>
