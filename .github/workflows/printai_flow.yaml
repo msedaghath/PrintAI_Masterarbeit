@@ -28,37 +28,33 @@ jobs:
           --health-retries 5
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.9'
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.9"
 
-    - name: Install dependencies
-      run: |
-        python -m venv venv
-        source venv/bin/activate
-        pip install -r requirements.txt
+      - name: Install dependencies
+        run: |
+          
+          pip install -r apidashboard/requirements.txt
 
-    - name: Run migrations
-      env:
-        DATABASE_URL: postgres://django_user:django_password@localhost:5432/django_db
-      run: |
-        source venv/bin/activate
-        python manage.py migrate
+      - name: Run migrations
+        env:
+          DATABASE_URL: postgres://django_user:django_password@localhost:5432/django_db
+        run: |
+          python manage.py migrate
 
-    - name: Run tests
-      env:
-        DATABASE_URL: postgres://django_user:django_password@localhost:5432/django_db
-      run: |
-        source venv/bin/activate
-        python manage.py test
+      - name: Run tests
+        env:
+          DATABASE_URL: postgres://django_user:django_password@localhost:5432/django_db
+        run: |
+          python manage.py test
 
-    - name: Run Django server
-      env:
-        DATABASE_URL: postgres://django_user:django_password@localhost:5432/django_db
-      run: |
-        source venv/bin/activate
-        python manage.py runserver 0.0.0.0:8000
+      - name: Run Django server
+        env:
+          DATABASE_URL: postgres://django_user:django_password@localhost:5432/django_db
+        run: |
+          python manage.py runserver 0.0.0.0:8000
