@@ -45,16 +45,16 @@ jobs:
         env:
           DATABASE_URL: postgres://django_user:django_password@localhost:5432/django_db
         run: |
-          python manage.py migrate
+          python apidashboard/dataportal/manage.py migrate
 
       - name: Run tests
         env:
           DATABASE_URL: postgres://django_user:django_password@localhost:5432/django_db
         run: |
-          python manage.py test
+          python apidashboard/dataportal/manage.py test
 
       - name: Run Django server
         env:
           DATABASE_URL: postgres://django_user:django_password@localhost:5432/django_db
         run: |
-          python manage.py runserver 0.0.0.0:8000
+          python apidashboard/dataportal/manage.py runserver 0.0.0.0:8000
