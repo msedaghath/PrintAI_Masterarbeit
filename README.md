@@ -28,6 +28,8 @@ Start the server
 
 ```bash
 cd apidashboard
+python manage.py makemigrations
+python manage.py migrate
 python manage.py runserver
 ```
 
