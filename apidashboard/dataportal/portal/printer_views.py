@@ -18,28 +18,29 @@ import logging
 
 
 
-@method_decorator(login_required(login_url='login'), name='dispatch')
-class PingPrinterView(View):
+class PingPrinterView(LoginRequiredMixin, View):
+    login_url = 'login'
+
     def get(self, request, *args, **kwargs):
         printer_id = kwargs.get('printer_id')
-        printer = Printer.objects.get(id=printer_id)
-        # url = f"http://{printer.ip_address}"
-        if "http://" in printer.ip_address or "https://" in printer.ip_address:
-            url = printer.ip_address
-        else:
-            url = f"http://{printer.ip_address}"
+        printer = get_object_or_404(Printer, id=printer_id)
+
+        url = printer.ip_address
+        if not url.startswith(('http://', 'https://')):
+            url = f'http://{url}'
         apikey = printer.api_key
+
         try:
             client = OctoRest(url=url, apikey=apikey)
-            client.printer()['state']['flags']['ready']
-            print(client.printer()['state']['flags']['ready'])
+            printer_state = client.printer()
+            printer_ready = printer_state['state']['flags']['ready']
+            logging.info(f"Printer ready state: {printer_ready}")
             printer.ping = True
-            printer.save()
-
         except Exception as e:
-            print(type(e))
+            logging.error(f"Error connecting to printer: {e}")
             printer.ping = False
-            printer.save()
+
+        printer.save()
         return redirect('printer_list')
 
 class PrinterListView(LoginRequiredMixin, ListView, FormMixin):
@@ -85,39 +86,6 @@ class PrinterListView(LoginRequiredMixin, ListView, FormMixin):
     def form_invalid(self, form):
         return self.render_to_response(self.get_context_data(form=form, object_list=self.object_list))
 
-# class PrinterListView(LoginRequiredMixin, ListView, FormMixin):
-#     model = Printer
-#     context_object_name = 'printers'
-#     template_name = 'portal/printer_pages/printer_list.html'
-#     form_class = PrinterForm
-
-#     def get(self, request, *args, **kwargs):
-#         self.object = None
-#         self.object_list = self.get_queryset()
-#         form_class = self.get_form_class()
-#         form = self.get_form(form_class)
-#         return self.render_to_response(self.get_context_data(form=form, object_list=self.object_list))
-
-#     def post(self, request, *args, **kwargs):
-#         self.object = None
-#         self.object_list = self.get_queryset()
-#         form_class = self.get_form_class()
-#         form = self.get_form(form_class)
-#         if form.is_valid():
-#             return self.form_valid(form)
-#         else:
-#             return self.form_invalid(form)
-
-#     def form_valid(self, form):
-#         try:
-#             form.save()
-#             return redirect('printer_list')
-#         except IntegrityError:
-#             form.add_error(None, "A printer with this IP and API Key already exists.")
-#             return self.form_invalid(form)
-
-#     def form_invalid(self, form):
-#         return self.render_to_response(self.get_context_data(form=form, object_list=self.object_list))
 
 class PrinterUpdateView(LoginRequiredMixin, UpdateView):
     model = Printer
@@ -125,103 +93,6 @@ class PrinterUpdateView(LoginRequiredMixin, UpdateView):
     template_name = 'portal/printer_pages/printer_add.html'
     success_url = reverse_lazy('printer_list')
 
-
-# @login_required(login_url='login')
-# def printer_detail(request, pk):
-
-#     printer = Printer.objects.get(pk=pk)
-#     # url = f"http://{printer.ip_address}"
-#     if "http://" in printer.ip_address or "https://" in printer.ip_address:
-#         url = printer.ip_address
-#     else:
-#         url = f"http://{printer.ip_address}"
-#     apikey = printer.api_key
-#     print(url) 
-#     # Assign default values before the try block
-#     printer_info = None
-#     temperature_history = None
-#     current_temperature = None
-
-#     try:
-#         client = OctoRest(url=url, apikey=apikey)
-#         printer_info = get_printer_info(client)
-#         # temperature_history = get_temperature_history(client)
-#         # current_temperature = get_current_temperature(client)
-#     except Exception as e:
-#         print (e , 'error in the try block')
-
-#     context = {
-#         'printer': printer,
-#         'printer_info': printer_info,
-#         'temperature_history': temperature_history,
-#         'current_temperature': current_temperature,
-#     }
-#     return render(request, 'portal/printer_pages/printer_detail.html', context)
-
-
-#     def get_printer_info(client):
-#         try:
-#             response = client.printer()
-
-#             if response.status_code != 200:
-#                 raise Exception(f"Error: Received status code {response.status_code}")
-
-#             data = response.json()  # Assumes the response is JSON
-
-#             # Validate the response data (replace with your actual validation logic)
-#             if 'expected_field' not in data:
-#                 raise Exception("Invalid response data")
-
-#             # Extract the data you're interested in
-#             printer_info = data['expected_field']
-
-#             return printer_info
-#         except Exception as e:
-#             logging.error(f"Failed to get printer info: {e}")
-#             raise
-
-#     def get_temperature_history(client):
-
-#         try:
-#             response = client.history()
-
-#             if response.status_code != 200:
-#                 raise Exception(f"Error: Received status code {response.status_code}")
-
-#             data = response.json()  # Assumes the response is JSON
-
-#             # Validate the response data (replace with your actual validation logic)
-#             if 'expected_field' not in data:
-#                 raise Exception("Invalid response data")
-
-#             # Extract the data you're interested in
-#             temperature_history = data['expected_field']
-
-#             return temperature_history
-#         except Exception as e:
-#             logging.error(f"Failed to get temperature history: {e}")
-#             raise
-
-#     def get_current_temperature(client):
-#         try:
-#             response = client.temperature()
-
-#             if response.status_code != 200:
-#                 raise Exception(f"Error: Received status code {response.status_code}")
-
-#             data = response.json()  # Assumes the response is JSON
-
-#             # Validate the response data (replace with your actual validation logic)
-#             if 'expected_field' not in data:
-#                 raise Exception("Invalid response data")
-
-#             # Extract the data you're interested in
-#             current_temperature = data['expected_field']
-
-#             return current_temperature
-#         except Exception as e:
-#             logging.error(f"Failed to get current temperature: {e}")
-#             raise
 
 
 @login_required(login_url='login')
@@ -236,12 +107,10 @@ class ControlPrinterView(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         printer_id = kwargs.get('printer_id')
-        printer = Printer.objects.get(id=printer_id)
-        # url = f"http://{printer.ip_address}"
-        if "http://" in printer.ip_address or "https://" in printer.ip_address:
-            url = printer.ip_address
-        else:
-            url = f"http://{printer.ip_address}"
+        printer = get_object_or_404(Printer, id=printer_id)
+        url = printer.ip_address
+        if not url.startswith(('http://', 'https://')):
+            url = f'http://{url}'
         apikey = printer.api_key
         
         files = []  # Initialize files as an empty list
@@ -261,7 +130,7 @@ class ControlPrinterView(LoginRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
         printer_id = kwargs.get('printer_id')
-        printer = Printer.objects.get(id=printer_id)
+        printer = get_object_or_404(Printer, id=printer_id)
         url = f"http://{printer.ip_address}"
         apikey = printer.api_key
         client = OctoRest(url=url, apikey=apikey)
@@ -318,93 +187,6 @@ class ControlPrinterView(LoginRequiredMixin, View):
 
 #Printer detail view, designated page for each printer 
 @login_required(login_url='login')
-
-# def printer_detail(request, pk):    
-#     printer = Printer.objects.get(pk=pk)
-#     if "http://" in printer.ip_address or "https://" in printer.ip_address:
-#         url = printer.ip_address
-#     else:
-#         url = f"http://{printer.ip_address}"
-#     apikey = printer.api_key
-#     print(url) 
-#     def make_client(url, apikey):
-#      try:
-#          client = OctoRest(url=url, apikey=apikey)
-#          return client
-#      except ConnectionError as ex:
-#             print(ex)
-    
-#     def get_version():
-#         try :
-#             client = make_client(url,apikey)
-#             message = "You are using OctoPrint v" + client.version['server'] + "\n"
-#             ping_printer = True 
-#             print(message , ping_printer)
-#             return message 
-#         except Exception as e:
-#             ping_printer = False
-#             return "Server is not responding"
-
-#     def get_printer_info():
-#         try:
-#             client = make_client(url,apikey)
-#             printer_info = ""
-#             # printer_info += str(client.version) + "\n"
-#             # printer_info += str(client.job_info()) + "\n"
-#             printing = client.printer()['state']['flags']['printing']
-                                  
-#             if printing:
-#                 printer_info += "Currently printing!\n"
-#             else:
-#                 printer_info += "Not currently printing...\n"
-#             return printer_info
-#         except Exception as e:
-#             print(e)
-#     def get_temprature_history():
-#         try:
-#             client = make_client(url,apikey)
-#             temprature_history = client.printer(history=True)
-#             temprature_history = temprature_history['temperature']['tool0']['actual']
-#             print(temprature_history)
-#             # add to the list to temp history
-            
-#             lis = (list(temprature_history))
-            
-#             print(lis)
-#             return temprature_history
-#         except Exception as e:
-#             print(e)
-#     def get_current_temprature():
-#         try:
-#             client = make_client(url,apikey)
-#             current_temprature = client.printer()
-#             current_temprature_tool = current_temprature['temperature']['tool0']['actual']
-#             current_temprature_bed = current_temprature['temperature']['bed']['actual']
-#             current_temprature_list = {'c_tool' : current_temprature_tool , 'c_bed' : current_temprature_bed}   
-#             return current_temprature_list
-#         except Exception as e:
-#             print(e)
-
-#     def run_thefunctions():
-
-#         pass
-        
-#     if request.method == 'GET':
-#         get_version()
-#         get_printer_info()
-#         get_temprature_history()
-#         get_current_temprature()
-#     if request.method == 'POST':
-#         run_thefunctions()
-#     # add printer info to the context 
-#     context = {'message' : get_version ,
-#      'printer': printer ,  
-#      'printer_info' : get_printer_info,
-#     'print_history' : get_temprature_history,
-#     'current_temprature' : get_current_temprature,
-#      }
-#     return render(request, 'portal/printer_pages/printer_detail.html', context)
-#     return render(request, 'portal/printer_pages/printer_detail.html', context)
 
 def printer_detail(request, pk):    
     printer = Printer.objects.get(pk=pk)
