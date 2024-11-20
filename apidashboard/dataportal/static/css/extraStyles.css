@@ -23,4 +23,11 @@
 .card-buttons{
     background-color : #55c2da;
     border-right: 10px;
-    }
+}
+
+.full-view-iframe {
+  width: 100%;
+  height: 225px;
+  border: none;
+  overflow: hidden;
+}
