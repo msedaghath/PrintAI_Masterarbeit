@@ -27,16 +27,18 @@ Printer Cards
           <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
             {% for printer in printers %}
             <div class="col">
-              <div class="card shadow-lg fixed-card  {% if printer.ping %}bg-light border-success {% else %}bg-light border-primary {% endif %}">
-                <!-- <iframe class="full-view-iframe" src="{{ printer.ip_address }}/webcam/?action=stream" allowfullscreen></iframe> -->
-                <img id="webcam_image" data-bind="css: { flipH: settings.flipH(), flipV: settings.flipV() }, event: { load: onWebcamLoaded, error: onWebcamErrored }, visible: !webcamError()" src="{{ printer.ip_address }}/webcam/?action=stream" style="">
-                <div class="card-body card-content-center">
-                  <p class="card-text">URL of the printer : {{ printer.ip_address }}</p>
-                  <div class="d-flex justify-content-between align-items-center">
-                    <!-- Other content -->
+              <a href="{% url 'printer_detail' printer.id %}" class="card-link">
+                <div class="card shadow-lg fixed-card  {% if printer.ping %}bg-light border-success {% else %}bg-light border-primary {% endif %}">
+                  <!-- <iframe class="full-view-iframe" src="{{ printer.ip_address }}/webcam/?action=stream" allowfullscreen></iframe> -->
+                  <img id="webcam_image" data-bind="css: { flipH: settings.flipH(), flipV: settings.flipV() }, event: { load: onWebcamLoaded, error: onWebcamErrored }, visible: !webcamError()" src="{{ printer.ip_address }}/webcam/?action=stream" style="">
+                  <div class="card-body card-content-center">
+                    <p class="card-text">URL of the printer : {{ printer.ip_address }}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                      <!-- Other content -->
+                    </div>
                   </div>
                 </div>
-              </div>
+              </a>
             </div>
             {% endfor %}
           </div>
