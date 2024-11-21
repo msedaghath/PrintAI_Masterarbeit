@@ -1,76 +1,68 @@
 {% extends "template.html" %}
-        <div id="layoutSidenav_content">
-            <main>
-                {% block main_content %}
-                <div class="container-fluid px-4">
-                    <h1 class="mt-4">Printer Number {{printer.id}} Details </h1>
-                    <ol class="breadcrumb mb-4">
-                        <li class="breadcrumb-item"><a href="{% url 'index' %}">Dashboard</a></li>
-                        <li class="breadcrumb-item active">Printers</li>
-                    </ol>
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <i class="fas fa-table me-1"></i>
-                            Printer Status Description
-                        </div>
-                        
-                        <div class="card-body">
-                            The printer in the address : {{ printer.ip_address }} 
-                            is
-                             {% if printer.ping == True %}
-                             <b style="color: green;">online and {{message}} on this device </b>
-                             {% else %}
-                             <b style="color: red;" > offline showing error : <q> {{message}} </q></b>
-                             {% endif %}
-                             .                                      
-                        </div>
-                        <div class="card-body">
-                            {{temprature_history}}
-                        </div>
-                        <div class="card-body">
-                            <h3>Printer {{printer.id}} Current jobs </h3>
-                            {{printer_info}}
-                        </div>
-                        <div>
-                            print history : 
-                            {{print_history}} <br>
-                            printer : {{printer}} <br>
-                            printer info : {{printer_info}} <br>
-                            current_temprature_list : {{current_temprature}} <br>
-                        </div>
-                    </div>
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <i class="fas fa-table me-1"></i>
-                            Last Prints
-                        </div>
-                        <div class="card-body">
-                            <table id="datatablesSimple">
-                                <thead>
-                                    <tr>
-                                        <th>Section </th>
-                                        <th>Current Temprature </th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                </tbody>
-                                    <tr>
-                                        <td>Tool Temprature</td>
-                                        <td> {{current_temprature_bed}}</td>
-                                        {{temprature}}
-                                        <td>{% for c_tool in current_temprature_list %}
-                                            <p>{{ temprature }}</p>
-                                          {% endfor %}</td>
-                                        <td>
-                                        {% for temprature in current_temprature_list %}
-                                        <p>{{ temprature.current_temprature_bed }}: {{ temprature.value }}</p>
-                                         {% endfor %}
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+<div id="layoutSidenav_content">
+    <main>
+        {% block main_content %}
+        <div class="container-fluid px-4">
+            <h1 class="mt-4">Printer Number {{printer.id}} Details</h1>
+            <ol class="breadcrumb mb-4">
+                <li class="breadcrumb-item"><a href="{% url 'index' %}">Dashboard</a></li>
+                <li class="breadcrumb-item active">Printers</li>
+            </ol>
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Printer Status Description
                 </div>
-            </main>
-            {% endblock main_content %}
+                <div class="card-body">
+                    <p>The printer at the address: <strong>{{ printer.ip_address }}</strong> is
+                        {% if printer.ping == True %}
+                        <span class="text-success">online</span> and {{message}} on this device.
+                        {% else %}
+                        <span class="text-danger">offline</span> showing error: <q>{{message}}</q>.
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-thermometer-half me-1"></i>
+                    Temperature History
+                </div>
+                <div class="card-body">
+                    {{temprature_history}}
+                </div>
+            </div>
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-tasks me-1"></i>
+                    Current Jobs
+                </div>
+                <div class="card-body">
+                    <h3>Printer {{printer.id}} Current Jobs</h3>
+                    {{printer_info}}
+                </div>
+            </div>
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-history me-1"></i>
+                    Print History
+                </div>
+                <div class="card-body">
+                    {{print_history}}
+                </div>
+            </div>
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Additional Information
+                </div>
+                <div class="card-body">
+                    <p><strong>Printer:</strong> {{printer}}</p>
+                    <p><strong>Printer Info:</strong> {{printer_info}}</p>
+                    <p><strong>Current Temperature List:</strong> {{current_temprature}}</p>
+                </div>
+            </div>
+        </div>
+        {% endblock %}
+    </main>
+</div>
