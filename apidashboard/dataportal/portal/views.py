@@ -1,4 +1,4 @@
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect, render, get_object_or_404
 from octorest import OctoRest
 from .models import Printer , Profile
 from django.contrib import messages
@@ -7,6 +7,8 @@ from django.contrib.auth.decorators import login_required
 from django.views import View
 from .printer_views import *
 from django.contrib.auth.forms import UserCreationForm
+from django.http import StreamingHttpResponse, HttpResponse
+import requests
 
 # from .forms import CreateUserForm
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -71,3 +73,20 @@ class CheckStyle(LoginRequiredMixin, View):
     login_url = 'login'
     def get(self, request, *args, **kwargs):
         return render(request,'portal/overall_temp/template.html')
+
+class WebcamStreamView(View):
+    def get(self, request, printer_id):
+        printer = get_object_or_404(Printer, id=printer_id)
+        ip_address = printer.ip_address
+        if not ip_address.startswith(('http://', 'https://')):
+            ip_address = f'http://{ip_address}'
+        stream_url = f"{ip_address}/webcam/?action=stream"
+
+        try:
+            response = requests.get(stream_url, stream=True)
+            return StreamingHttpResponse(
+                response.raw,
+                content_type=response.headers.get('Content-Type', 'multipart/x-mixed-replace')
+            )
+        except requests.exceptions.RequestException:
+            return HttpResponse("Unable to connect to the printer webcam.", status=502)
