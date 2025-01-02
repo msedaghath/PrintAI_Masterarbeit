@@ -1,7 +1,7 @@
 from traceback import print_list
 from django.urls import path
 
-from .views import IndexView, LoginView, logoutUser, SignUpView , UserAccountView , CheckStyle, WebcamStreamView
+from .views import IndexView, LoginView, logoutUser, SignUpView , UserAccountView , CheckStyle, WebcamStreamView, user_account
 from .printer_views import *
 
 urlpatterns = [
@@ -21,5 +21,6 @@ urlpatterns = [
     path('logout', logoutUser, name='logout'),
     path('signup', SignUpView.as_view(), name='signup'),
     path('user_account', UserAccountView.as_view(), name='user_account'),
-    path('check', CheckStyle.as_view(), name='check' )
+    path('check', CheckStyle.as_view(), name='check' ),
+    path('account/', user_account, name='user_account'),
 ]

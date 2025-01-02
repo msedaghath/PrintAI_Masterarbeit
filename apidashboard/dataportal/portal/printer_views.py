@@ -1,5 +1,5 @@
 from django.db import IntegrityError
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import redirect, render
 from django.views import View
 from django.contrib.auth.decorators import login_required
@@ -15,32 +15,17 @@ from .forms import PrinterForm
 from .models import Printer , Profile
 from octorest import OctoRest
 import logging 
-
-
+from .services import PrinterService
 
 @method_decorator(login_required(login_url='login'), name='dispatch')
 class PingPrinterView(View):
     def get(self, request, *args, **kwargs):
         printer_id = kwargs.get('printer_id')
         printer = Printer.objects.get(id=printer_id)
-        # url = f"http://{printer.ip_address}"
-        if "http://" in printer.ip_address or "https://" in printer.ip_address:
-            url = printer.ip_address
-        else:
-            url = f"http://{printer.ip_address}"
-        apikey = printer.api_key
-        try:
-            client = OctoRest(url=url, apikey=apikey)
-            client.printer()['state']['flags']['ready']
-            print(client.printer()['state']['flags']['ready'])
-            printer.ping = True
-            printer.save()
-
-        except Exception as e:
-            print(type(e))
-            printer.ping = False
-            printer.save()
-        return redirect('printer_list')
+        success = PrinterService.ping_printer(printer)
+        printer.ping = success
+        printer.save()
+        return redirect('/printers')
 
 class PrinterListView(LoginRequiredMixin, ListView, FormMixin):
     model = Printer
@@ -134,7 +119,6 @@ class ControlPrinterView(LoginRequiredMixin, View):
         url = f"http://{printer.ip_address}"
         apikey = printer.api_key
         client = OctoRest(url=url, apikey=apikey)
-
         command = request.POST.get('command')
         print(command)
         if command == 'home':
