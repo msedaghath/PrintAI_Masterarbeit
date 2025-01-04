@@ -1,0 +1,8 @@
+scrape_configs:
+  - job_name: 'octoprint'
+    scrape_interval: 5s
+    metrics_path: '/plugin/prometheus_exporter/metrics'
+    params:
+      apikey: ['D8B041BCCA13402FA5F90644879BEB23']
+    static_configs:
+      - targets: [141.41.42.192:80]

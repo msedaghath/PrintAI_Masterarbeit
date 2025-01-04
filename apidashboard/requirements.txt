@@ -1,11 +1,12 @@
 asgiref==3.5.2
 certifi==2022.9.24
 charset-normalizer==2.1.1
-Django==4.1.4
+Django>=3.2,<4.0
 docopt==0.6.2
 idna==3.4
 octorest==0.4
 pipreqs==0.4.12
+psycopg2>=2.8,<3.0
 requests==2.28.1
 sqlparse==0.4.3
 urllib3==1.26.13

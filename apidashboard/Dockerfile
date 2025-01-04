@@ -1,22 +1,20 @@
 FROM python:3.9
 
-# Path: /app
+# Set the working directory
 WORKDIR /app
 
-# Path: /app/requirements.txt
-COPY requirements.txt .
+# Copy the requirements file
+COPY requirements.txt /app/
 
-# Path: /app
+# Install the dependencies
+RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-# Path: /app
-COPY /dataportal .
+# Copy the rest of the application code
+COPY . /app/
 
-#EXpose port 8000
+# Expose the port
 EXPOSE 8000
 
-# Path: /app
-WORKDIR /app
-
-#Start the django server 
+# Run the application
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

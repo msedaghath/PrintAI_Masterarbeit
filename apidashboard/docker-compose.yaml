@@ -9,6 +9,8 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    networks:
+      - prometheus_network
 
   web:
     build: .
@@ -25,12 +27,73 @@ services:
       - DATABASE_PASSWORD=mypassword
       - DATABASE_HOST=db
       - DATABASE_PORT=5432
-    # entrypoint: >
-    #   sh -c "
-    #   python manage.py makemigrations &&
-    #   python manage.py migrate &&
-    #   python manage.py runserver 0.0.0.0:8000
-    #   "
+    networks:
+      - prometheus_network
+
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./dynamic/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - prometheus_network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prometheus.rule=PathPrefix(`/prometheus`)"
+      - "traefik.http.routers.prometheus.entrypoints=websecure"
+      - "traefik.http.routers.prometheus.tls=true"
+      - "traefik.http.routers.prometheus.tls.certresolver=default"
+
+  grafana:
+    image: grafana/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - prometheus_network
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/provisioning/dashboards:/var/lib/grafana/dashboards
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=PathPrefix(`/grafana`)"
+      - "traefik.http.routers.grafana.entrypoints=websecure"
+      - "traefik.http.routers.grafana.tls=true"
+      - "traefik.http.routers.grafana.tls.certresolver=default"
+
+  traefik:
+    image: traefik:latest
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.websecure.http.tls=true"
+      - "--providers.file.filename=/dynamic/traefik.yml"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8085:8080"
+    volumes:
+      - "./certs:/certs"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./dynamic:/dynamic"
+    networks:
+      - prometheus_network
+    labels:
+      - "traefik.http.routers.grafana.tls=true"
+      - "traefik.http.routers.grafana.tls.certresolver=default"
+      - "traefik.http.routers.prometheus.tls=true"
+      - "traefik.http.routers.prometheus.tls.certresolver=default"
+
+networks:
+  prometheus_network:
+    external: true
 
 volumes:
   postgres_data:
