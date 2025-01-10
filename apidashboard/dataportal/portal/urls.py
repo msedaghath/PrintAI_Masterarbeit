@@ -3,6 +3,7 @@ from django.urls import path
 
 from .views import IndexView, LoginView, logoutUser, SignUpView , UserAccountView , CheckStyle, WebcamStreamView, user_account
 from .printer_views import *
+from portal.services import AlertService
 
 urlpatterns = [
     path('', IndexView.as_view(), name='index'),
@@ -23,4 +24,6 @@ urlpatterns = [
     path('user_account', UserAccountView.as_view(), name='user_account'),
     path('check', CheckStyle.as_view(), name='check' ),
     path('account/', user_account, name='user_account'),
+    path('webhook/alert/', AlertService.handle_alert, name='alert_webhook'),
+
 ]

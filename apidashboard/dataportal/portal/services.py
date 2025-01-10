@@ -1,5 +1,8 @@
+import json
+from django.http import JsonResponse
 from octorest import OctoRest
 from .models import Printer
+from django.views.decorators.csrf import csrf_exempt
 
 class PrinterService:
     @staticmethod
@@ -31,3 +34,17 @@ class PrinterService:
             }
         except Exception as e:
             return {'error': str(e)}
+
+class AlertService:
+    @csrf_exempt
+    def handle_alert(request):
+        if request.method == 'POST':
+            try:
+                alert_data = json.loads(request.body)
+                # Process the alert data here
+                print(alert_data)
+                return JsonResponse({'status': 'success'}, status=200)
+            except json.JSONDecodeError:
+                return JsonResponse({'status': 'invalid json'}, status=400)
+        return JsonResponse({'status': 'invalid request'}, status=400)
+

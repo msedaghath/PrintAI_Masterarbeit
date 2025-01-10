@@ -59,6 +59,8 @@ services:
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning
       - ./grafana/provisioning/dashboards:/var/lib/grafana/dashboards
+      - ./grafana/grafana.ini:/etc/grafana/grafana.ini
+
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.grafana.rule=PathPrefix(`/grafana`)"

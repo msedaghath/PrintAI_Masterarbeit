@@ -9,12 +9,9 @@ from django.shortcuts import get_object_or_404
 from django.views.generic import ListView, UpdateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
-
-import requests
 from .forms import PrinterForm
 from .models import Printer , Profile
 from octorest import OctoRest
-import logging 
 from .services import PrinterService
 
 @method_decorator(login_required(login_url='login'), name='dispatch')

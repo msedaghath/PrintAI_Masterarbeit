@@ -1,4 +1,7 @@
 {% extends "template.html" %}
+{% block title %}
+PrintAI details of printer {{ printer.id }}
+{% endblock %}
 <div id="layoutSidenav_content">
     <main>
         {% block main_content %}
@@ -27,12 +30,12 @@
             <div class="card mb-4">
                 <div class="card-header">
                     <i class="fas fa-thermometer-half me-1"></i>
-                    <!-- Temperature History -->
-                     Grafana dashboard
+                    Grafana dashboard
                 </div>
                 <div class="card-body">
                     <!-- {{temprature_history}} -->
-                    <iframe src="http://localhost:3000/dashboard/snapshot/ELgHGjcLq0GVYfsDnORqr0cgYTQ7KMj0" width="100%" height="600" frameborder="0"></iframe>
+                    <p>To view the dashboard, please click the link below:</p>
+                    <a href="http://raspiprintai:3000/dashboard/snapshot/ELgHGjcLq0GVYfsDnORqr0cgYTQ7KMj0" target="_blank">Open Dashboard</a>
                 </div>
             </div>
             <div class="card mb-4">
