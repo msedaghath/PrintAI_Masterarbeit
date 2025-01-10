@@ -5,4 +5,4 @@ scrape_configs:
     params:
       apikey: ['D8B041BCCA13402FA5F90644879BEB23']
     static_configs:
-      - targets: [141.41.42.192:80]
+      - targets: [141.41.42.202:80]
