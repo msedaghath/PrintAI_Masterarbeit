@@ -21,15 +21,18 @@
                         <span class="text-danger">offline</span> showing error: <q>{{message}}</q>.
                         {% endif %}
                     </p>
+                    <p><strong>Status:</strong> {{ printer_status }}</p> <!-- Add this line to show the status -->
                 </div>
             </div>
             <div class="card mb-4">
                 <div class="card-header">
                     <i class="fas fa-thermometer-half me-1"></i>
-                    Temperature History
+                    <!-- Temperature History -->
+                     Grafana dashboard
                 </div>
                 <div class="card-body">
-                    {{temprature_history}}
+                    <!-- {{temprature_history}} -->
+                    <iframe src="http://localhost:3000/dashboard/snapshot/ELgHGjcLq0GVYfsDnORqr0cgYTQ7KMj0" width="100%" height="600" frameborder="0"></iframe>
                 </div>
             </div>
             <div class="card mb-4">
@@ -45,7 +48,7 @@
             <div class="card mb-4">
                 <div class="card-header">
                     <i class="fas fa-history me-1"></i>
-                    Print History
+                    Current Temprature 
                 </div>
                 <div class="card-body">
                     {{print_history}}
@@ -59,7 +62,7 @@
                 <div class="card-body">
                     <p><strong>Printer:</strong> {{printer}}</p>
                     <p><strong>Printer Info:</strong> {{printer_info}}</p>
-                    <p><strong>Current Temperature List:</strong> {{current_temprature}}</p>
+                    <p><strong>Current Temperature List:</strong> {{current_temperature}}</p>
                 </div>
             </div>
         </div>
