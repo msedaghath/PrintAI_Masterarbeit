@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: myuser
       POSTGRES_PASSWORD: mypassword
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_Printai:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     networks:
@@ -14,7 +14,7 @@ services:
 
   web:
     build: .
-    command: python manage.py runserver 0.0.0.0:8000
+    command: python manage.py runserver 0.0.0.0:8000 
     volumes:
       - ./dataportal:/app
     ports:
@@ -98,4 +98,4 @@ networks:
     external: true
 
 volumes:
-  postgres_data:
+  postgres_data_Printai:

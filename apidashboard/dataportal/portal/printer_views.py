@@ -1,5 +1,5 @@
 from django.db import IntegrityError
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import HttpResponseRedirect, JsonResponse, HttpResponse
 from django.shortcuts import redirect, render
 from django.views import View
 from django.contrib.auth.decorators import login_required
@@ -13,6 +13,7 @@ from .forms import PrinterForm
 from .models import Printer , Profile
 from octorest import OctoRest
 from .services import PrinterService
+from datetime import datetime
 
 @method_decorator(login_required(login_url='login'), name='dispatch')
 class PingPrinterView(View):
@@ -20,7 +21,7 @@ class PingPrinterView(View):
         printer_id = kwargs.get('printer_id')
         printer = Printer.objects.get(id=printer_id)
         success = PrinterService.ping_printer(printer)
-        printer.ping = success
+        printer.ping = True
         printer.save()
         return redirect('/printers')
 
@@ -217,13 +218,43 @@ def printer_detail(request, pk):
     temperature_history = get_temprature_history()
     current_temperature = get_current_temprature()
 
+    last_print_data = PrinterService.get_last_print_data(printer)
+
     context = {
         'message': message,
         'printer': printer,
         'printer_info': printer_info,
         'print_history': temperature_history,
         'current_temperature': current_temperature,
-        'ping_printer': ping_printer
+        'ping_printer': ping_printer,
+        'last_print_data': last_print_data
     }
 
     return render(request, 'portal/printer_pages/printer_detail.html', context)
+
+@login_required(login_url='login')
+def export_csv(request, printer_id):
+    try:
+        printer = get_object_or_404(Printer, id=printer_id)
+        start_time = request.GET.get('start_time')
+        end_time = request.GET.get('end_time')
+
+        if not all([start_time, end_time]):
+            return HttpResponse("Start time and end time are required", status=400)
+
+        # Validate that end_time is after start_time
+        if end_time <= start_time:
+            return HttpResponse("End time must be after start time", status=400)
+
+        csv_data = PrinterService.export_instance_data_to_csv(printer, start_time, end_time)
+        if not csv_data:
+            return HttpResponse("No data available for the specified time range", status=404)
+
+        response = HttpResponse(csv_data, content_type='text/csv')
+        filename = f"printer_{printer_id}_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+    except ValueError as e:
+        return HttpResponse(f"Invalid date format: {str(e)}", status=400)
+    except Exception as e:
+        return HttpResponse(f"Error: {str(e)}", status=500)

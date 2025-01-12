@@ -38,14 +38,10 @@ class Printer(models.Model):
     api_key = models.CharField(max_length=32)
     id = models.AutoField(primary_key=True)
     ping = models.BooleanField(default=False)
-
+    printing = models.BooleanField(default=False)
     class Meta:
         unique_together = (('ip_address', 'api_key'),)
     
 
-class DataPrint(models.Model):
-    printer = models.ForeignKey(Printer, on_delete=models.CASCADE)
-    location = models.CharField(max_length=100)
-    data = models.CharField(max_length=100)
-    print_date = models.DateField()
+
 

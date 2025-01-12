@@ -17,6 +17,7 @@ urlpatterns = [
     # path('printers/ping/<int:printer_id>', ping_printer, name='ping_printer'),
     path('printers/ping/<int:printer_id>', PingPrinterView.as_view(), name='ping_printer'),
     path('printer/<int:printer_id>/webcam/', WebcamStreamView.as_view(), name='webcam_stream'),
+    path('printers/<int:printer_id>/export_csv', export_csv, name='export_csv'),
     path('login', LoginView.as_view(), name='login'),
     path('accounts/login/', LoginView.as_view(), name='login'),
     path('logout', logoutUser, name='logout'),

@@ -28,7 +28,7 @@ SECRET_KEY = 'django-insecure-z_kn6#gi3@c5-aul#o(_b9(1a*y*69!3_zqp0q6#yz%&&#fc_e
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['raspiprintai.local' ,'raspiprintai']
+ALLOWED_HOSTS = ['raspiprintai.local' ,'raspiprintai' ,'localhost' , '127.0.0.1' ,'100.92.17.50']
 
 
 # Application definition

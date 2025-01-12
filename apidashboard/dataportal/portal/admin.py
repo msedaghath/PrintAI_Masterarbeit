@@ -1,6 +1,5 @@
 from django.contrib import admin
-from .models import DataPrint , Printer , Profile
-admin.site.register(DataPrint)
+from .models import  Printer , Profile
 admin.site.register(Printer)
 admin.site.register(Profile)
 

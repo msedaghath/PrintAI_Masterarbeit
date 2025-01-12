@@ -68,6 +68,39 @@ PrintAI details of printer {{ printer.id }}
                     <p><strong>Current Temperature List:</strong> {{current_temperature}}</p>
                 </div>
             </div>
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-database me-1"></i> Last Print Data
+                </div>
+                <div class="card-body">
+                    {% if last_print_data %}
+                    <p>Print ID: {{ last_print_data.print_id }}</p>
+                    <p>Duration: {{ last_print_data.print_duration }} seconds</p>
+                    <p>Filament Used: {{ last_print_data.filament_used }} grams</p>
+                    {% if last_print_data.state_id %}
+                    <p>Printer State: {{ last_print_data.state_id }}</p>
+                    {% else %}
+                    <p>No last print data available.</p>
+                    {% endif %}
+                    {% else %}
+                    <p>No last print data available.</p>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-file-csv me-1"></i> Export Data
+                </div>
+                <div class="card-body">
+                    <form action="{% url 'export_csv' printer.id %}" method="GET">
+                        <label for="start_time">Start Time:</label>
+                        <input type="datetime-local" name="start_time">
+                        <label for="end_time">End Time:</label>
+                        <input type="datetime-local" name="end_time">
+                        <button type="submit">Export CSV</button>
+                    </form>
+                </div>
+            </div>
         </div>
         {% endblock %}
     </main>
