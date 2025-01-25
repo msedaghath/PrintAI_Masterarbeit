@@ -34,6 +34,8 @@ services:
     image: prom/prometheus
     volumes:
       - ./dynamic/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus 
+
     ports:
       - "9090:9090"
     networks:
@@ -92,6 +94,15 @@ services:
       - "traefik.http.routers.grafana.tls.certresolver=default"
       - "traefik.http.routers.prometheus.tls=true"
       - "traefik.http.routers.prometheus.tls.certresolver=default"
+
+  prometheus-backup:
+    image: alpine
+    command: tar -czvf /backup/prometheus_backup.tar.gz /prometheus
+    volumes:
+      - prometheus_data:/prometheus  # Mount the Prometheus data volume
+      - ./backups:/backup  # Mount a local directory to store backups
+    networks:
+      - prometheus_network
 
 networks:
   prometheus_network:
