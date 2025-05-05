@@ -15,7 +15,7 @@ from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-# address the templates folder in the prtal app templates folder
+# address the templates folder in the portal app templates folder
 TEMPLATE_DIR = os.path.join(BASE_DIR, 'portal/templates/portal/overall_temp')
 
 
@@ -40,7 +40,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # Original app
     'portal',
+    # New modular apps
+    'accounts.apps.AccountsConfig',
+    'printers.apps.PrintersConfig',
+    'monitoring.apps.MonitoringConfig',
+    'api.apps.ApiConfig',
+    'core',
 ]
 
 MIDDLEWARE = [
@@ -60,6 +67,10 @@ TEMPLATES = [
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
             TEMPLATE_DIR,
+            os.path.join(BASE_DIR, 'accounts', 'templates'),
+            os.path.join(BASE_DIR, 'printers', 'templates'),
+            os.path.join(BASE_DIR, 'monitoring', 'templates'),
+            os.path.join(BASE_DIR, 'core', 'templates'),
         ],
         'APP_DIRS': True,
         'OPTIONS': {

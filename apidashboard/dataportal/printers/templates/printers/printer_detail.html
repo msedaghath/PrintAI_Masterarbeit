@@ -1,0 +1,92 @@
+{% extends 'portal/overall_temp/template.html' %}
+
+{% block title %}Printer Detail{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Printer Details</h2>
+    <div class="row">
+        <!-- Printer Information -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>Printer Information</h4>
+                </div>
+                <div class="card-body">
+                    <p><strong>IP Address:</strong> {{ printer.ip_address }}</p>
+                    <p><strong>Status:</strong> 
+                        {% if ping_printer %}
+                            <span class="badge bg-success">Online</span>
+                        {% else %}
+                            <span class="badge bg-danger">Offline</span>
+                        {% endif %}
+                    </p>
+                    <p><strong>Connection:</strong> {{ message }}</p>
+                    <p><strong>Print Status:</strong> {{ printer_info }}</p>
+                    
+                    <div class="mt-4">
+                        <a href="{% url 'control_printer' printer.id %}" class="btn btn-primary">Control Printer</a>
+                        <a href="{% url 'printer_update' printer.id %}" class="btn btn-warning">Edit</a>
+                        <a href="{% url 'printer_list' %}" class="btn btn-secondary">Back to List</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Temperature Display -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>Current Temperature</h4>
+                </div>
+                <div class="card-body">
+                    {% if current_temperature %}
+                        <p><strong>Extruder:</strong> {{ current_temperature.c_tool }}°C</p>
+                        <p><strong>Bed:</strong> {{ current_temperature.c_bed }}°C</p>
+                    {% else %}
+                        <p>Temperature data unavailable</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Webcam Feed -->
+            <div class="card">
+                <div class="card-header">
+                    <h4>Webcam Feed</h4>
+                </div>
+                <div class="card-body">
+                    {% if ping_printer %}
+                        <img src="{% url 'webcam_stream' printer.id %}" class="img-fluid" alt="Webcam Feed">
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <p>Webcam feed unavailable. Printer is offline.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Data Export Section -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h4>Export Data</h4>
+        </div>
+        <div class="card-body">
+            <form action="{% url 'export_csv' printer.id %}" method="get" class="row g-3">
+                <div class="col-md-5">
+                    <label for="start_time" class="form-label">Start Time:</label>
+                    <input type="datetime-local" id="start_time" name="start_time" class="form-control" required>
+                </div>
+                <div class="col-md-5">
+                    <label for="end_time" class="form-label">End Time:</label>
+                    <input type="datetime-local" id="end_time" name="end_time" class="form-control" required>
+                </div>
+                <div class="col-md-2 align-self-end">
+                    <button type="submit" class="btn btn-success w-100">Export CSV</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

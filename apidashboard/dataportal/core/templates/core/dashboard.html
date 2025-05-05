@@ -1,0 +1,99 @@
+{% extends 'portal/overall_temp/template.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3>PrintAI Dashboard</h3>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">Welcome, {{ user.username }}!</h5>
+                    <p class="card-text">This is your central dashboard for monitoring and controlling your 3D printers.</p>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-4">
+                            <div class="card bg-light mb-3">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">Printer Management</h5>
+                                    <p class="card-text">Add, edit, and control your 3D printers</p>
+                                    <a href="{% url 'printer_list' %}" class="btn btn-primary">Manage Printers</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light mb-3">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">User Account</h5>
+                                    <p class="card-text">Manage your profile information</p>
+                                    <a href="{% url 'user_account' %}" class="btn btn-primary">Edit Profile</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light mb-3">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title">Documentation</h5>
+                                    <p class="card-text">Learn how to use the system</p>
+                                    <a href="#" class="btn btn-primary">View Docs</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Active Printers Section -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Active Printers</h4>
+                </div>
+                <div class="card-body">
+                    {% if printers %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>IP Address</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for printer in printers %}
+                                        <tr>
+                                            <td>{{ printer.ip_address }}</td>
+                                            <td>
+                                                {% if printer.ping %}
+                                                    <span class="badge bg-success">Online</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">Offline</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'printer_detail' printer.id %}" class="btn btn-sm btn-primary">Details</a>
+                                                <a href="{% url 'control_printer' printer.id %}" class="btn btn-sm btn-success">Control</a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <p>No printers added yet. <a href="{% url 'printer_list' %}">Add your first printer</a></p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

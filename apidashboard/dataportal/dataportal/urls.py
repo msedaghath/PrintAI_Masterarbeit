@@ -14,9 +14,21 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import path, include
+from django.views.generic import TemplateView
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import redirect
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('portal.urls')),
+    # Main dashboard index - redirect to core dashboard
+    path('', lambda request: redirect('dashboard') if request.user.is_authenticated else redirect('login'), name='index'),
+    # Include app URLs
+    path('dashboard/', include('core.urls')),
+    path('accounts/', include('accounts.urls')),
+    path('printers/', include('printers.urls')),
+    path('monitoring/', include('monitoring.urls')),
+    path('api/', include('api.urls')),
+    # Legacy routes - keep temporarily until migration is complete
+    path('portal/', include('portal.urls')),
 ]
