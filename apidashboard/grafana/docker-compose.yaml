@@ -1,0 +1,41 @@
+services:
+  grafana:
+    image: grafana/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
+    networks:
+      - prometheus_network
+    volumes:
+      - ./provisioning:/etc/grafana/provisioning
+      - ./provisioning/dashboards:/var/lib/grafana/dashboards
+      - ./grafana.ini:/etc/grafana/grafana.ini
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=PathPrefix(`/grafana`)"
+      - "traefik.http.routers.grafana.entrypoints=websecure"
+      - "traefik.http.routers.grafana.tls=true"
+      - "traefik.http.routers.grafana.tls.certresolver=default"
+
+
+
+  prometheus-backup:
+    image: alpine
+    command: tar -czvf /backup/prometheus_backup.tar.gz /prometheus
+    volumes:
+      - prometheus_data:/prometheus  # Mount the Prometheus data volume
+      - ./backups:/backup  # Mount a local directory to store backups
+    networks:
+      - prometheus_network
+
+networks:
+  prometheus_network:
+    external: true
+
+    
+volumes:
+  prometheus_data:
+    external: 
+      name: 90f29416df2fa499cced5839806bcbebf64cd79549a083d0dfeed7add3d11607

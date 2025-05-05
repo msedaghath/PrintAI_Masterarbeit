@@ -246,3 +246,4 @@ $RECYCLE.BIN/
 # End of https://www.toptal.com/developers/gitignore/api/django,visualstudiocode,linux,venv,windows
 apidashboard/dataportal/portal/CGI.code-workspace
 apidashboard/dataportal/portal/migrations/*
+apidashboard/grafana/backups/*
