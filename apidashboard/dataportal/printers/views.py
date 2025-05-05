@@ -8,8 +8,8 @@ from django.views.generic.edit import FormMixin
 from django.views.generic import ListView, UpdateView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
+from django.contrib.auth.models import User
 from .models import Printer
-from accounts.models import Profile
 from .services import PrinterService, MonitoringService
 from .forms import PrinterForm
 
@@ -22,8 +22,7 @@ class PrinterListView(LoginRequiredMixin, ListView, FormMixin):
     login_url = 'login'
 
     def get_queryset(self):
-        user_profile, created = Profile.objects.get_or_create(user=self.request.user)
-        return Printer.objects.filter(profile=user_profile)
+        return Printer.objects.filter(user=self.request.user)
 
     def get(self, request, *args, **kwargs):
         self.object = None
@@ -38,9 +37,9 @@ class PrinterListView(LoginRequiredMixin, ListView, FormMixin):
         form_class = self.get_form_class()
         form = self.get_form(form_class)
         if form.is_valid():
-            # Ensure that the printer is associated with the current user's profile
+            # Ensure that the printer is associated with the current user
             printer = form.save(commit=False)
-            printer.profile = Profile.objects.get(user=request.user)
+            printer.user = request.user
             try:
                 printer.save()
                 return redirect('printer_list')
@@ -110,8 +109,7 @@ def delete_printer(request, printer_id):
     printer = get_object_or_404(Printer, id=printer_id)
     
     # Verify that the printer belongs to the current user
-    user_profile = Profile.objects.get(user=request.user)
-    if printer.profile != user_profile:
+    if printer.user != request.user:
         return HttpResponse("Unauthorized", status=403)
         
     printer.delete()
@@ -127,8 +125,7 @@ class PingPrinterView(LoginRequiredMixin, View):
         printer = get_object_or_404(Printer, id=printer_id)
         
         # Verify that the printer belongs to the current user
-        user_profile = Profile.objects.get(user=request.user)
-        if printer.profile != user_profile:
+        if printer.user != request.user:
             return HttpResponse("Unauthorized", status=403)
             
         success = PrinterService.ping_printer(printer)
@@ -145,8 +142,7 @@ class ControlPrinterView(LoginRequiredMixin, View):
         printer = get_object_or_404(Printer, id=printer_id)
         
         # Verify that the printer belongs to the current user
-        user_profile = Profile.objects.get(user=request.user)
-        if printer.profile != user_profile:
+        if printer.user != request.user:
             return HttpResponse("Unauthorized", status=403)
         
         files = []
@@ -165,8 +161,7 @@ class ControlPrinterView(LoginRequiredMixin, View):
         printer = get_object_or_404(Printer, id=printer_id)
         
         # Verify that the printer belongs to the current user
-        user_profile = Profile.objects.get(user=request.user)
-        if printer.profile != user_profile:
+        if printer.user != request.user:
             return HttpResponse("Unauthorized", status=403)
             
         command = request.POST.get('command')
@@ -191,8 +186,7 @@ class WebcamStreamView(LoginRequiredMixin, View):
         printer = get_object_or_404(Printer, id=printer_id)
         
         # Verify that the printer belongs to the current user
-        user_profile = Profile.objects.get(user=request.user)
-        if printer.profile != user_profile:
+        if printer.user != request.user:
             return HttpResponse("Unauthorized", status=403)
             
         ip_address = printer.ip_address

@@ -10,7 +10,7 @@ from django.views.generic import ListView, UpdateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from .forms import PrinterForm
-from .models import Printer , Profile
+from .models import Printer
 from octorest import OctoRest
 from .services import PrinterService
 from datetime import datetime
@@ -32,9 +32,8 @@ class PrinterListView(LoginRequiredMixin, ListView, FormMixin):
     form_class = PrinterForm
 
     def get_queryset(self):
-        # Assuming 'user' attribute in Profile model points to Django's User model
-        user_profile, created = Profile.objects.get_or_create(user=self.request.user)
-        return Printer.objects.filter(profile=user_profile)
+        # Get printers directly associated with the user
+        return Printer.objects.filter(user=self.request.user)
 
     def get(self, request, *args, **kwargs):
         self.object = None
@@ -49,9 +48,9 @@ class PrinterListView(LoginRequiredMixin, ListView, FormMixin):
         form_class = self.get_form_class()
         form = self.get_form(form_class)
         if form.is_valid():
-            # Ensure that the printer is associated with the current user's profile
+            # Ensure that the printer is associated with the current user
             printer = form.save(commit=False)
-            printer.profile = Profile.objects.get(user=request.user)
+            printer.user = request.user
             printer.save()
             return redirect('printer_list')
         else:
@@ -59,7 +58,7 @@ class PrinterListView(LoginRequiredMixin, ListView, FormMixin):
 
     def form_valid(self, form):
         try:
-            # form.save() is now handled in the post method to associate the printer with the user's profile
+            # form.save() is now handled in the post method to associate the printer with the user
             return redirect('printer_list')
         except IntegrityError:
             form.add_error(None, "A printer with this IP and API Key already exists.")
@@ -68,17 +67,14 @@ class PrinterListView(LoginRequiredMixin, ListView, FormMixin):
     def form_invalid(self, form):
         return self.render_to_response(self.get_context_data(form=form, object_list=self.object_list))
 
-
 class PrinterUpdateView(LoginRequiredMixin, UpdateView):
     model = Printer
     form_class = PrinterForm
     template_name = 'portal/printer_pages/printer_add.html'
     success_url = reverse_lazy('printer_list')
 
-
 @login_required(login_url='login')
 def delete_printer(request, printer_id):
-    #printer = Printer.objects.get(id=printer_id)
     printer = get_object_or_404(Printer, id=printer_id)
     printer.delete()
     return redirect('printer_list')

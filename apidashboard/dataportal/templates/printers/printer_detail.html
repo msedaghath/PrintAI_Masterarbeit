@@ -1,0 +1,278 @@
+{% extends "base/dashboard_layout.html" %}
+{% load static %}
+
+{% block title %}{{ printer.name }} - PrintAI Dashboard{% endblock %}
+
+{% block page_title %}{{ printer.name }} Details{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'control_printer' printer.id %}" class="btn btn-primary">
+        <i class="fas fa-sliders-h me-1"></i> Control
+    </a>
+    <a href="{% url 'printer_list' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-1"></i> Back to List
+    </a>
+</div>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="row">
+    <!-- Printer Status Card -->
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Printer Information</h5>
+                <span class="badge {% if printer.is_online %}bg-success{% else %}bg-danger{% endif %}">
+                    {% if printer.is_online %}Online{% else %}Offline{% endif %}
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <table class="table table-borderless">
+                            <tbody>
+                                <tr>
+                                    <td class="text-muted">Model:</td>
+                                    <td>{{ printer.model }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">IP Address:</td>
+                                    <td>{{ printer.ip_address }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">API Key:</td>
+                                    <td>••••••••••••{{ printer.api_key|slice:"-4:" }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Last Seen:</td>
+                                    <td>{{ printer.last_update|default:"Never" }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="col-lg-6">
+                        <table class="table table-borderless">
+                            <tbody>
+                                <tr>
+                                    <td class="text-muted">Build Volume:</td>
+                                    <td>{{ printer.build_volume }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Firmware:</td>
+                                    <td>{{ printer.firmware_version }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Added On:</td>
+                                    <td>{{ printer.date_added }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Owner:</td>
+                                    <td>{{ printer.owner }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Current Job Status -->
+        {% if printer.current_job %}
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Current Print Job</h5>
+                <span class="badge bg-warning">Printing</span>
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-lg-6">
+                        <h5>{{ printer.current_job.name }}</h5>
+                        <p class="text-muted mb-2">Started: {{ printer.current_job.start_time }}</p>
+                        
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="flex-grow-1 me-3">
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar bg-primary" role="progressbar" style="width: {{ printer.current_job.progress }}%;" 
+                                         aria-valuenow="{{ printer.current_job.progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                            </div>
+                            <div class="progress-label">{{ printer.current_job.progress }}%</div>
+                        </div>
+                        
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <div class="border rounded p-2">
+                                    <div class="small text-muted">Elapsed Time</div>
+                                    <div>{{ printer.current_job.elapsed_time }}</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="border rounded p-2">
+                                    <div class="small text-muted">Est. Remaining</div>
+                                    <div>{{ printer.current_job.remaining_time }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="text-center">
+                            <!-- Placeholder for print preview/camera feed -->
+                            <div class="ratio ratio-16x9 mb-2">
+                                <div class="bg-light d-flex align-items-center justify-content-center">
+                                    <div>
+                                        <i class="fas fa-camera fa-3x text-muted"></i>
+                                        <p class="mt-2">Camera feed unavailable</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-outline-danger">Pause</button>
+                                <button class="btn btn-sm btn-danger">Stop</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Temperature and Settings -->
+    <div class="col-lg-4">
+        <!-- Temperature Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Temperature</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <div>
+                            <i class="fas fa-fire text-danger me-1"></i> Hotend
+                        </div>
+                        <div id="hotend-temp">{{ printer.hotend_temp|default:"0" }}°C / {{ printer.hotend_target|default:"0" }}°C</div>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-danger" role="progressbar" 
+                             style="width: {% if printer.hotend_target > 0 %}{{ printer.hotend_temp|floatformat:0|default:"0"|intdiv:printer.hotend_target|mul:100 }}{% else %}0{% endif %}%;" 
+                             aria-valuenow="{{ printer.hotend_temp|default:'0' }}" aria-valuemin="0" aria-valuemax="{{ printer.hotend_target|default:'0' }}"></div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <div>
+                            <i class="fas fa-th text-primary me-1"></i> Bed
+                        </div>
+                        <div id="bed-temp">{{ printer.bed_temp|default:"0" }}°C / {{ printer.bed_target|default:"0" }}°C</div>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-primary" role="progressbar" 
+                             style="width: {% if printer.bed_target > 0 %}{{ printer.bed_temp|floatformat:0|default:"0"|intdiv:printer.bed_target|mul:100 }}{% else %}0{% endif %}%;" 
+                             aria-valuenow="{{ printer.bed_temp|default:'0' }}" aria-valuemin="0" aria-valuemax="{{ printer.bed_target|default:'0' }}"></div>
+                    </div>
+                </div>
+                
+                {% if printer.chamber_temp %}
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <div>
+                            <i class="fas fa-cube text-success me-1"></i> Chamber
+                        </div>
+                        <div id="chamber-temp">{{ printer.chamber_temp|default:"0" }}°C / {{ printer.chamber_target|default:"0" }}°C</div>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-success" role="progressbar" 
+                             style="width: {% if printer.chamber_target > 0 %}{{ printer.chamber_temp|floatformat:0|default:"0"|intdiv:printer.chamber_target|mul:100 }}{% else %}0{% endif %}%;" 
+                             aria-valuenow="{{ printer.chamber_temp|default:'0' }}" aria-valuemin="0" aria-valuemax="{{ printer.chamber_target|default:'0' }}"></div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Recent Activity Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Recent Activity</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for activity in printer.recent_activity %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ activity.title }}</h6>
+                            <small>{{ activity.time }}</small>
+                        </div>
+                        <p class="mb-1 small">{{ activity.description }}</p>
+                        <small class="text-muted">{{ activity.details }}</small>
+                    </div>
+                    {% empty %}
+                    <div class="list-group-item text-center py-3">
+                        <p class="text-muted mb-0">No recent activity</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Actions Card -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary" {% if not printer.is_online %}disabled{% endif %}>
+                        <i class="fas fa-home me-1"></i> Home All Axes
+                    </button>
+                    <button class="btn btn-outline-warning" {% if not printer.is_online %}disabled{% endif %}>
+                        <i class="fas fa-fan me-1"></i> Cool Down
+                    </button>
+                    <a href="#" class="btn btn-outline-secondary">
+                        <i class="fas fa-history me-1"></i> View Print History
+                    </a>
+                    <a href="#" class="btn btn-outline-danger">
+                        <i class="fas fa-cog me-1"></i> Printer Settings
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+    // This would be replaced with actual websocket/API connection to get real-time updates
+    document.addEventListener('DOMContentLoaded', function() {
+        if ({{ printer.is_online|yesno:"true,false" }}) {
+            // Simulated temperature updates
+            setInterval(function() {
+                updateTemperature('hotend-temp', 
+                    {{ printer.hotend_temp|default:"0" }}, 
+                    {{ printer.hotend_target|default:"0" }});
+                updateTemperature('bed-temp', 
+                    {{ printer.bed_temp|default:"0" }}, 
+                    {{ printer.bed_target|default:"0" }});
+                {% if printer.chamber_temp %}
+                updateTemperature('chamber-temp', 
+                    {{ printer.chamber_temp|default:"0" }}, 
+                    {{ printer.chamber_target|default:"0" }});
+                {% endif %}
+            }, 5000);
+        }
+    });
+    
+    function updateTemperature(elementId, current, target) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            // Add small random fluctuation to simulate live readings
+            const fluctuation = (Math.random() - 0.5) * 0.4;
+            const newTemp = Math.max(0, current + fluctuation).toFixed(1);
+            element.textContent = newTemp + '°C / ' + target + '°C';
+        }
+    }
+</script>
+{% endblock %}

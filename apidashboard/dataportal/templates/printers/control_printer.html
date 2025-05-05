@@ -1,0 +1,763 @@
+{% extends "base/dashboard_layout.html" %}
+{% load static %}
+
+{% block title %}Control {{ printer.name }} - PrintAI Dashboard{% endblock %}
+
+{% block page_title %}Control {{ printer.name }}{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'printer_detail' printer.id %}" class="btn btn-outline-secondary">
+        <i class="fas fa-info-circle me-1"></i> Details
+    </a>
+    <a href="{% url 'printer_list' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-1"></i> Back to List
+    </a>
+</div>
+{% endblock %}
+
+{% block page_css %}
+<style>
+    .control-card {
+        height: 100%;
+    }
+    .temperature-input {
+        max-width: 110px;
+    }
+    .control-btn {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .control-btn.move-btn {
+        background-color: #f8f9fa;
+        color: #495057;
+        border-color: #dee2e6;
+    }
+    .control-btn.move-btn:hover {
+        background-color: #e9ecef;
+    }
+    .temp-progress {
+        height: 8px;
+    }
+    .webcam-container {
+        position: relative;
+        aspect-ratio: 16/9;
+        background-color: #f8f9fa;
+        border-radius: 0.25rem;
+        overflow: hidden;
+    }
+    .webcam-placeholder {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+    }
+    .gcode-terminal {
+        font-family: monospace;
+        height: 200px;
+        overflow-y: auto;
+        background-color: #212529;
+        color: #f8f9fa;
+        border-radius: 0.25rem;
+        padding: 0.75rem;
+    }
+    .gcode-input {
+        font-family: monospace;
+    }
+    .terminal-line {
+        margin: 0;
+        padding: 0;
+        white-space: pre-wrap;
+    }
+    .terminal-response {
+        color: #adb5bd;
+    }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="row">
+    <!-- Left Column: Camera Feed and File Upload -->
+    <div class="col-lg-7">
+        <!-- Camera Feed -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Webcam Feed</h5>
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-outline-primary" id="refreshCam">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" id="toggleFullscreen">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="webcam-container">
+                    <div class="webcam-placeholder">
+                        <i class="fas fa-camera fa-3x text-muted mb-2"></i>
+                        <p>Camera feed unavailable</p>
+                        <button class="btn btn-sm btn-primary" id="connectCamera">Connect Camera</button>
+                    </div>
+                    <img id="webcamFeed" class="img-fluid d-none" alt="Webcam Feed">
+                </div>
+            </div>
+        </div>
+        
+        <!-- File Upload and Print Job Control -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Print Job Management</h5>
+            </div>
+            <div class="card-body">
+                <!-- Print Job Currently Running -->
+                {% if printer.current_job %}
+                <div class="alert alert-info mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="mb-0">Currently Printing: {{ printer.current_job.name }}</h5>
+                        <span class="badge bg-warning">{{ printer.current_job.progress }}%</span>
+                    </div>
+                    <div class="progress mb-3" style="height: 10px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" 
+                             style="width: {{ printer.current_job.progress }}%;" 
+                             aria-valuenow="{{ printer.current_job.progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6 col-md-3">
+                            <div class="small text-muted">Started</div>
+                            <div>{{ printer.current_job.start_time }}</div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="small text-muted">Elapsed</div>
+                            <div id="elapsedTime">{{ printer.current_job.elapsed_time }}</div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="small text-muted">Remaining</div>
+                            <div id="remainingTime">{{ printer.current_job.remaining_time }}</div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="small text-muted">Estimated End</div>
+                            <div>{{ printer.current_job.estimated_end_time }}</div>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-center gap-2">
+                        <button class="btn btn-warning" id="pauseButton">
+                            <i class="fas fa-pause me-1"></i> Pause Print
+                        </button>
+                        <button class="btn btn-danger" id="cancelButton" data-bs-toggle="modal" data-bs-target="#cancelModal">
+                            <i class="fas fa-stop me-1"></i> Cancel Print
+                        </button>
+                    </div>
+                </div>
+                {% else %}
+                <form action="{% url 'upload_gcode' printer.id %}" method="post" enctype="multipart/form-data" class="mb-4">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="gcodeFile" class="form-label">Upload G-code File</label>
+                        <input class="form-control" type="file" id="gcodeFile" name="gcode_file" accept=".gcode,.g,.nc" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-upload me-1"></i> Upload & Print
+                        </button>
+                    </div>
+                </form>
+                
+                <h6 class="mb-3">Recent Files</h6>
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm">
+                        <thead>
+                            <tr>
+                                <th>File</th>
+                                <th>Size</th>
+                                <th>Last Printed</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for file in printer.recent_files %}
+                            <tr>
+                                <td>{{ file.name }}</td>
+                                <td>{{ file.size }}</td>
+                                <td>{{ file.last_printed|default:'Never' }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary print-file-btn" data-file-id="{{ file.id }}">
+                                        <i class="fas fa-print"></i> Print
+                                    </button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center py-3">No recent files</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Right Column: Controls -->
+    <div class="col-lg-5">
+        <!-- Temperature Control -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Temperature Control</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <i class="fas fa-fire text-danger me-1"></i> Hotend
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span id="hotendTemp" class="me-3">{{ printer.hotend_temp|default:"0" }}°C / {{ printer.hotend_target|default:"0" }}°C</span>
+                            <div class="input-group temperature-input">
+                                <input type="number" class="form-control form-control-sm" id="hotendTarget" placeholder="Target" min="0" max="300">
+                                <button class="btn btn-sm btn-outline-primary" id="setHotendTemp">Set</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="progress temp-progress">
+                        <div id="hotendProgress" class="progress-bar bg-danger" role="progressbar" 
+                             style="width: {% if printer.hotend_target > 0 %}{{ printer.hotend_temp|floatformat:0|default:"0"|intdiv:printer.hotend_target|mul:100 }}{% else %}0{% endif %}%;" 
+                             aria-valuenow="{{ printer.hotend_temp|default:'0' }}" aria-valuemin="0" aria-valuemax="{{ printer.hotend_target|default:'0' }}"></div>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <i class="fas fa-th text-primary me-1"></i> Bed
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span id="bedTemp" class="me-3">{{ printer.bed_temp|default:"0" }}°C / {{ printer.bed_target|default:"0" }}°C</span>
+                            <div class="input-group temperature-input">
+                                <input type="number" class="form-control form-control-sm" id="bedTarget" placeholder="Target" min="0" max="150">
+                                <button class="btn btn-sm btn-outline-primary" id="setBedTemp">Set</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="progress temp-progress">
+                        <div id="bedProgress" class="progress-bar bg-primary" role="progressbar" 
+                             style="width: {% if printer.bed_target > 0 %}{{ printer.bed_temp|floatformat:0|default:"0"|intdiv:printer.bed_target|mul:100 }}{% else %}0{% endif %}%;" 
+                             aria-valuenow="{{ printer.bed_temp|default:'0' }}" aria-valuemin="0" aria-valuemax="{{ printer.bed_target|default:'0' }}"></div>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-end">
+                    <button class="btn btn-warning me-2" id="cooldownBtn">
+                        <i class="fas fa-fan me-1"></i> Cool Down All
+                    </button>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" id="preheatPLA">PLA</button>
+                        <button class="btn btn-primary" id="preheatABS">ABS</button>
+                        <button class="btn btn-primary" id="preheatPETG">PETG</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Movement Control -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Movement Control</h5>
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-outline-primary" id="homeAll">
+                        <i class="fas fa-home me-1"></i> Home All
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" id="emergencyStop" data-bs-toggle="modal" data-bs-target="#emergencyStopModal">
+                        <i class="fas fa-power-off me-1"></i> E-Stop
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- XY Movement -->
+                <div class="mb-4">
+                    <h6 class="mb-3">X/Y Movement</h6>
+                    <div class="d-flex flex-column align-items-center">
+                        <div class="mb-2">
+                            <button class="btn control-btn move-btn" data-axis="y" data-direction="-1">
+                                <i class="fas fa-arrow-up"></i>
+                            </button>
+                        </div>
+                        <div class="d-flex justify-content-center align-items-center mb-2">
+                            <button class="btn control-btn move-btn me-2" data-axis="x" data-direction="-1">
+                                <i class="fas fa-arrow-left"></i>
+                            </button>
+                            <button class="btn control-btn btn-outline-primary" id="homeXY">
+                                <i class="fas fa-home"></i>
+                            </button>
+                            <button class="btn control-btn move-btn ms-2" data-axis="x" data-direction="1">
+                                <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                        <div>
+                            <button class="btn control-btn move-btn" data-axis="y" data-direction="1">
+                                <i class="fas fa-arrow-down"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Z Movement and Extrusion -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="mb-3">Z Movement</h6>
+                        <div class="d-flex flex-column align-items-center">
+                            <button class="btn control-btn move-btn mb-2" data-axis="z" data-direction="-1">
+                                <i class="fas fa-arrow-up"></i>
+                            </button>
+                            <button class="btn control-btn btn-outline-primary mb-2" id="homeZ">
+                                <i class="fas fa-home"></i>
+                            </button>
+                            <button class="btn control-btn move-btn" data-axis="z" data-direction="1">
+                                <i class="fas fa-arrow-down"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h6 class="mb-3">Extruder</h6>
+                        <div class="d-flex flex-column align-items-center">
+                            <button class="btn control-btn move-btn mb-2" data-axis="e" data-direction="-1">
+                                <i class="fas fa-arrow-up"></i>
+                            </button>
+                            <div class="input-group mb-2">
+                                <input type="number" class="form-control form-control-sm" id="extrudeAmount" value="10" min="1" max="100">
+                                <span class="input-group-text">mm</span>
+                            </div>
+                            <button class="btn control-btn move-btn" data-axis="e" data-direction="1">
+                                <i class="fas fa-arrow-down"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <!-- Movement Step Selection -->
+                <div class="d-flex justify-content-center">
+                    <div class="btn-group">
+                        <input type="radio" class="btn-check" name="moveStep" id="step0_1" value="0.1">
+                        <label class="btn btn-outline-secondary" for="step0_1">0.1mm</label>
+                        
+                        <input type="radio" class="btn-check" name="moveStep" id="step1" value="1" checked>
+                        <label class="btn btn-outline-secondary" for="step1">1mm</label>
+                        
+                        <input type="radio" class="btn-check" name="moveStep" id="step10" value="10">
+                        <label class="btn btn-outline-secondary" for="step10">10mm</label>
+                        
+                        <input type="radio" class="btn-check" name="moveStep" id="step50" value="50">
+                        <label class="btn btn-outline-secondary" for="step50">50mm</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- G-code Console -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">G-code Console</h5>
+            </div>
+            <div class="card-body">
+                <div class="gcode-terminal mb-3" id="gcodeTerminal">
+                    <p class="terminal-line">// G-code terminal ready</p>
+                    <p class="terminal-line terminal-response">// Connect to printer to begin</p>
+                </div>
+                <form id="gcodeForm" class="d-flex">
+                    <input type="text" class="form-control gcode-input me-2" id="gcodeInput" placeholder="Enter G-code command">
+                    <button type="submit" class="btn btn-primary">Send</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cancel Print Modal -->
+<div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cancelModalLabel">Cancel Print Job</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to cancel the current print job?</p>
+                <p class="text-danger">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, Continue Printing</button>
+                <button type="button" class="btn btn-danger" id="confirmCancelBtn">Yes, Cancel Print</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Emergency Stop Modal -->
+<div class="modal fade" id="emergencyStopModal" tabindex="-1" aria-labelledby="emergencyStopModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="emergencyStopModalLabel">Emergency Stop</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <i class="fas fa-exclamation-triangle fa-3x text-danger"></i>
+                </div>
+                <p>Are you sure you want to perform an emergency stop?</p>
+                <p class="text-danger">This will immediately halt all printer operations, turn off heaters and motors.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmEmergencyStopBtn">Emergency Stop</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+    // Initialize printer control functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        // Temperature monitoring updates
+        if ({{ printer.is_online|yesno:"true,false" }}) {
+            // Connect to printer
+            simulatePrinterConnection();
+            
+            // Update temperature readings every 2 seconds
+            setInterval(updateTemperatureReadings, 2000);
+            
+            // If a job is running, update elapsed time
+            {% if printer.current_job %}
+            setInterval(updateElapsedTime, 1000);
+            {% endif %}
+        }
+        
+        // Movement control buttons
+        document.querySelectorAll('.move-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const axis = this.getAttribute('data-axis');
+                const direction = parseInt(this.getAttribute('data-direction'));
+                const step = document.querySelector('input[name="moveStep"]:checked').value;
+                moveAxis(axis, direction, step);
+            });
+        });
+        
+        // Temperature control
+        document.getElementById('setHotendTemp').addEventListener('click', function() {
+            const target = document.getElementById('hotendTemp').value;
+            setTemperature('hotend', target);
+        });
+        
+        document.getElementById('setBedTemp').addEventListener('click', function() {
+            const target = document.getElementById('bedTarget').value;
+            setTemperature('bed', target);
+        });
+        
+        // Preset temperatures
+        document.getElementById('preheatPLA').addEventListener('click', () => preheat('PLA'));
+        document.getElementById('preheatABS').addEventListener('click', () => preheat('ABS'));
+        document.getElementById('preheatPETG').addEventListener('click', () => preheat('PETG'));
+        document.getElementById('cooldownBtn').addEventListener('click', cooldown);
+        
+        // Homing buttons
+        document.getElementById('homeAll').addEventListener('click', () => home('all'));
+        document.getElementById('homeXY').addEventListener('click', () => home('xy'));
+        document.getElementById('homeZ').addEventListener('click', () => home('z'));
+        
+        // G-code console
+        document.getElementById('gcodeForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const command = document.getElementById('gcodeInput').value;
+            sendGcode(command);
+            document.getElementById('gcodeInput').value = '';
+        });
+        
+        // Camera controls
+        document.getElementById('connectCamera').addEventListener('click', connectCamera);
+        document.getElementById('refreshCam').addEventListener('click', refreshCamera);
+        
+        // Print control buttons
+        {% if printer.current_job %}
+        document.getElementById('pauseButton').addEventListener('click', togglePause);
+        document.getElementById('confirmCancelBtn').addEventListener('click', cancelPrint);
+        {% endif %}
+        
+        // Connect to printer
+        document.getElementById('confirmEmergencyStopBtn').addEventListener('click', emergencyStop);
+        
+        // Print file buttons
+        document.querySelectorAll('.print-file-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const fileId = this.getAttribute('data-file-id');
+                printFile(fileId);
+            });
+        });
+    });
+    
+    // Mock functions for demonstration
+    function simulatePrinterConnection() {
+        appendToTerminal('// Connecting to printer at {{ printer.ip_address }}');
+        setTimeout(() => {
+            appendToTerminal('// Connection established', true);
+            appendToTerminal('// Printer: {{ printer.model }}', true);
+            appendToTerminal('// Firmware: {{ printer.firmware_version }}', true);
+        }, 1000);
+    }
+    
+    function updateTemperatureReadings() {
+        // Add small random fluctuation to simulate live readings
+        const hotendTemp = {{ printer.hotend_temp|default:"0" }};
+        const hotendTarget = {{ printer.hotend_target|default:"0" }};
+        const bedTemp = {{ printer.bed_temp|default:"0" }};
+        const bedTarget = {{ printer.bed_target|default:"0" }};
+        
+        const hotendFluctuation = (Math.random() - 0.5) * 0.4;
+        const bedFluctuation = (Math.random() - 0.5) * 0.2;
+        
+        const newHotendTemp = Math.max(0, hotendTemp + hotendFluctuation).toFixed(1);
+        const newBedTemp = Math.max(0, bedTemp + bedFluctuation).toFixed(1);
+        
+        document.getElementById('hotendTemp').textContent = `${newHotendTemp}°C / ${hotendTarget}°C`;
+        document.getElementById('bedTemp').textContent = `${newBedTemp}°C / ${bedTarget}°C`;
+        
+        // Update progress bars
+        const hotendPercent = hotendTarget > 0 ? (newHotendTemp / hotendTarget * 100).toFixed(0) : 0;
+        const bedPercent = bedTarget > 0 ? (newBedTemp / bedTarget * 100).toFixed(0) : 0;
+        
+        document.getElementById('hotendProgress').style.width = `${hotendPercent}%`;
+        document.getElementById('bedProgress').style.width = `${bedPercent}%`;
+    }
+    
+    function updateElapsedTime() {
+        const elapsedTime = document.getElementById('elapsedTime').textContent;
+        const [hours, mins, secs] = elapsedTime.split(':').map(Number);
+        
+        let newSecs = secs + 1;
+        let newMins = mins;
+        let newHours = hours;
+        
+        if (newSecs >= 60) {
+            newSecs = 0;
+            newMins += 1;
+            
+            if (newMins >= 60) {
+                newMins = 0;
+                newHours += 1;
+            }
+        }
+        
+        document.getElementById('elapsedTime').textContent = 
+            `${newHours.toString().padStart(2, '0')}:${newMins.toString().padStart(2, '0')}:${newSecs.toString().padStart(2, '0')}`;
+        
+        // Also update remaining time (decrease)
+        const remainingTime = document.getElementById('remainingTime').textContent;
+        const [rHours, rMins, rSecs] = remainingTime.split(':').map(Number);
+        
+        let newRSecs = rSecs - 1;
+        let newRMins = rMins;
+        let newRHours = rHours;
+        
+        if (newRSecs < 0) {
+            newRSecs = 59;
+            newRMins -= 1;
+            
+            if (newRMins < 0) {
+                newRMins = 59;
+                newRHours -= 1;
+                
+                if (newRHours < 0) {
+                    newRHours = 0;
+                    newRMins = 0;
+                    newRSecs = 0;
+                }
+            }
+        }
+        
+        document.getElementById('remainingTime').textContent = 
+            `${newRHours.toString().padStart(2, '0')}:${newRMins.toString().padStart(2, '0')}:${newRSecs.toString().padStart(2, '0')}`;
+    }
+    
+    function moveAxis(axis, direction, step) {
+        const axisNames = {
+            'x': 'X', 
+            'y': 'Y', 
+            'z': 'Z',
+            'e': 'Extruder'
+        };
+        
+        const distance = direction * parseFloat(step);
+        const command = axis === 'e' ? `G1 E${distance} F300` : `G1 ${axisNames[axis]}${distance} F1500`;
+        
+        appendToTerminal(`// Moving ${axisNames[axis]} by ${distance}mm`);
+        sendGcode(command);
+    }
+    
+    function setTemperature(component, target) {
+        const components = {
+            'hotend': {name: 'Hotend', command: `M104 S${target}`},
+            'bed': {name: 'Bed', command: `M140 S${target}`}
+        };
+        
+        const comp = components[component];
+        appendToTerminal(`// Setting ${comp.name} temperature to ${target}°C`);
+        sendGcode(comp.command);
+    }
+    
+    function preheat(material) {
+        const temps = {
+            'PLA': {hotend: 200, bed: 60},
+            'ABS': {hotend: 240, bed: 100},
+            'PETG': {hotend: 230, bed: 70}
+        };
+        
+        const temp = temps[material];
+        appendToTerminal(`// Preheating for ${material} (Hotend: ${temp.hotend}°C, Bed: ${temp.bed}°C)`);
+        sendGcode(`M104 S${temp.hotend}`);
+        sendGcode(`M140 S${temp.bed}`);
+    }
+    
+    function cooldown() {
+        appendToTerminal('// Cooling down all heaters');
+        sendGcode('M104 S0');  // Hotend
+        sendGcode('M140 S0');  // Bed
+    }
+    
+    function home(axes) {
+        const commands = {
+            'all': {text: 'all axes', cmd: 'G28'},
+            'xy': {text: 'X and Y axes', cmd: 'G28 X Y'},
+            'z': {text: 'Z axis', cmd: 'G28 Z'}
+        };
+        
+        const cmd = commands[axes];
+        appendToTerminal(`// Homing ${cmd.text}`);
+        sendGcode(cmd.cmd);
+    }
+    
+    function sendGcode(command) {
+        appendToTerminal(`> ${command}`);
+        
+        // Simulate response after a short delay
+        setTimeout(() => {
+            appendToTerminal('ok', true);
+        }, 300);
+    }
+    
+    function appendToTerminal(text, isResponse = false) {
+        const terminal = document.getElementById('gcodeTerminal');
+        const line = document.createElement('p');
+        line.className = 'terminal-line' + (isResponse ? ' terminal-response' : '');
+        line.textContent = text;
+        terminal.appendChild(line);
+        terminal.scrollTop = terminal.scrollHeight;
+    }
+    
+    function connectCamera() {
+        const placeholder = document.querySelector('.webcam-placeholder');
+        const webcamFeed = document.getElementById('webcamFeed');
+        
+        placeholder.innerHTML = '<i class="fas fa-spinner fa-spin fa-3x text-primary mb-2"></i><p>Connecting to camera...</p>';
+        
+        // Simulate camera connection
+        setTimeout(() => {
+            placeholder.classList.add('d-none');
+            webcamFeed.classList.remove('d-none');
+            webcamFeed.src = 'https://via.placeholder.com/800x450.png?text=Webcam+Feed+Simulation';
+        }, 2000);
+    }
+    
+    function refreshCamera() {
+        const webcamFeed = document.getElementById('webcamFeed');
+        if (!webcamFeed.classList.contains('d-none')) {
+            webcamFeed.src = 'https://via.placeholder.com/800x450.png?text=Webcam+Feed+Refreshed+' + new Date().getTime();
+        }
+    }
+    
+    let isPaused = false;
+    function togglePause() {
+        isPaused = !isPaused;
+        const pauseBtn = document.getElementById('pauseButton');
+        
+        if (isPaused) {
+            pauseBtn.innerHTML = '<i class="fas fa-play me-1"></i> Resume Print';
+            pauseBtn.classList.replace('btn-warning', 'btn-success');
+            appendToTerminal('// Pausing print');
+            sendGcode('M25');  // Pause SD print
+        } else {
+            pauseBtn.innerHTML = '<i class="fas fa-pause me-1"></i> Pause Print';
+            pauseBtn.classList.replace('btn-success', 'btn-warning');
+            appendToTerminal('// Resuming print');
+            sendGcode('M24');  // Resume SD print
+        }
+    }
+    
+    function cancelPrint() {
+        appendToTerminal('// Cancelling print job');
+        sendGcode('M524');  // Abort SD print
+        
+        // Hide modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('cancelModal'));
+        modal.hide();
+        
+        // Wait a bit and then reload the page
+        setTimeout(() => {
+            window.location.reload();
+        }, 2000);
+    }
+    
+    function emergencyStop() {
+        appendToTerminal('// EMERGENCY STOP ACTIVATED');
+        sendGcode('M112');  // Emergency Stop
+        
+        // Hide modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('emergencyStopModal'));
+        modal.hide();
+        
+        // Show alert
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-danger alert-dismissible fade show mt-3';
+        alertDiv.innerHTML = `
+            <strong>Emergency Stop Activated!</strong> All printer operations have been halted.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        
+        document.querySelector('.card-body').prepend(alertDiv);
+        
+        // Disable controls
+        document.querySelectorAll('button:not(.btn-close)').forEach(btn => {
+            btn.disabled = true;
+        });
+        
+        // Wait a bit and then reload the page
+        setTimeout(() => {
+            window.location.reload();
+        }, 5000);
+    }
+    
+    function printFile(fileId) {
+        appendToTerminal(`// Starting print for file ID: ${fileId}`);
+        
+        // This would normally call an API endpoint
+        // For demo, we'll just reload the page after a delay
+        setTimeout(() => {
+            window.location.reload();
+        }, 1500);
+    }
+</script>
+{% endblock %}

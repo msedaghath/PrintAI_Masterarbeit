@@ -1,0 +1,132 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .main-content {
+        min-height: calc(100vh - 56px);
+    }
+    .sidebar {
+        box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+        height: calc(100vh - 56px);
+    }
+    .sidebar-sticky {
+        position: sticky;
+        top: 0;
+        height: calc(100vh - 56px);
+        padding-top: .5rem;
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+    .sidebar .nav-link {
+        font-weight: 500;
+        color: #333;
+    }
+    .sidebar .nav-link.active {
+        color: #2470dc;
+    }
+    .sidebar-heading {
+        font-size: .75rem;
+        text-transform: uppercase;
+    }
+    .navbar-brand {
+        padding-top: .75rem;
+        padding-bottom: .75rem;
+    }
+    .navbar .form-control {
+        padding: .75rem 1rem;
+        border-width: 0;
+        border-radius: 0;
+    }
+    .card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+</style>
+{% block page_css %}{% endblock %}
+{% endblock extra_css %}
+
+{% block body %}
+<header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
+    <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-5" href="{% url 'dashboard' %}">PrintAI Dashboard</a>
+    <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="navbar-nav">
+        <div class="nav-item text-nowrap d-flex align-items-center">
+            <span class="nav-link text-white mx-2">{{ request.user.username }}</span>
+            <a class="nav-link px-3" href="{% url 'user_account' %}">Account</a>
+            <a class="nav-link px-3" href="{% url 'logout' %}">Sign out</a>
+        </div>
+    </div>
+</header>
+
+<div class="container-fluid">
+    <div class="row">
+        <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+            <div class="sidebar-sticky pt-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
+                            <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'printer' in request.path %}active{% endif %}" href="{% url 'printer_list' %}">
+                            <i class="fas fa-print me-2"></i>Printers
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'system_health' in request.path %}active{% endif %}" href="{% url 'system_health' %}">
+                            <i class="fas fa-heartbeat me-2"></i>System Health
+                        </a>
+                    </li>
+                </ul>
+                
+                <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                    <span>Administration</span>
+                </h6>
+                <ul class="nav flex-column mb-2">
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'user_account' in request.path %}active{% endif %}" href="{% url 'user_account' %}">
+                            <i class="fas fa-user-cog me-2"></i>User Settings
+                        </a>
+                    </li>
+                    {% if request.user.is_staff %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/" target="_blank">
+                            <i class="fas fa-tools me-2"></i>Admin Panel
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </nav>
+
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4 main-content">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">{% block page_title %}Dashboard{% endblock %}</h1>
+                {% block page_actions %}{% endblock %}
+            </div>
+            
+            {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            {% block dashboard_content %}
+            <!-- Page content goes here -->
+            {% endblock dashboard_content %}
+        </main>
+    </div>
+</div>
+{% endblock body %}
+
+{% block extra_js %}
+{% block page_js %}{% endblock %}
+{% endblock extra_js %}

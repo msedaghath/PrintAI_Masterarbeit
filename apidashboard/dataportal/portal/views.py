@@ -1,8 +1,8 @@
 from django.shortcuts import redirect, render, get_object_or_404
 from octorest import OctoRest
-from .models import Printer , Profile
+from .models import Printer
 from django.contrib import messages
-from django.contrib.auth import authenticate, login , logout 
+from django.contrib.auth import authenticate, login, logout 
 from django.contrib.auth.decorators import login_required
 from django.views import View
 from .printer_views import *
@@ -10,7 +10,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.http import StreamingHttpResponse, HttpResponse
 import requests
 from django.urls import reverse_lazy
-from .forms import ProfileForm
+from django.contrib.auth.models import User
 
 # from .forms import CreateUserForm
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -66,8 +66,8 @@ def logoutUser(request):
 class IndexView(LoginRequiredMixin, View):
     login_url = 'login'
     def get(self, request, *args, **kwargs):
-        user_profile, created = Profile.objects.get_or_create(user=request.user)
-        printers = Printer.objects.filter(profile=user_profile).values('id', 'ip_address', 'ping')
+        # Get printers directly associated with the user instead of through profile
+        printers = Printer.objects.filter(user=request.user).values('id', 'ip_address', 'ping')
         return render(request, 'portal/portal.html', {'printers': printers})
 
 class UserAccountView(LoginRequiredMixin, View):
@@ -98,13 +98,14 @@ class WebcamStreamView(View):
 
 @login_required(login_url='login')
 def user_account(request):
-    profile, created = Profile.objects.get_or_create(user=request.user)
+    user = request.user
     if request.method == 'POST':
-        form = ProfileForm(request.POST, instance=profile)
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Profile updated successfully')
-            return redirect('user_account')
-    else:
-        form = ProfileForm(instance=profile)
-    return render(request, 'portal/user_account.html', {'form': form})
+        # Update user fields directly
+        user.first_name = request.POST.get('first_name', user.first_name)
+        user.last_name = request.POST.get('last_name', user.last_name)
+        user.email = request.POST.get('email', user.email)
+        user.save()
+        messages.success(request, 'Profile updated successfully')
+        return redirect('user_account')
+    
+    return render(request, 'portal/user_account.html', {'user': user})

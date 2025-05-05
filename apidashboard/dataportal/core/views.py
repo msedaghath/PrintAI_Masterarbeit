@@ -3,14 +3,13 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views import View
 from printers.models import Printer
-from accounts.models import Profile
+from django.contrib.auth.models import User
 
 @login_required(login_url='login')
 def dashboard(request):
     """Central dashboard view displaying an overview of the system"""
-    # Get user profile and their printers
-    user_profile, created = Profile.objects.get_or_create(user=request.user)
-    printers = Printer.objects.filter(profile=user_profile)
+    # Get printers directly associated with the user
+    printers = Printer.objects.filter(user=request.user)
     
     # Count online printers
     online_printers = printers.filter(ping=True).count()

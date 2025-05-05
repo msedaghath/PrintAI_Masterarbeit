@@ -1,0 +1,458 @@
+{% extends "base/dashboard_layout.html" %}
+{% load static %}
+
+{% block title %}System Health - PrintAI Dashboard{% endblock %}
+
+{% block page_title %}System Health Monitoring{% endblock %}
+
+{% block page_css %}
+<style>
+    .metric-card {
+        transition: transform 0.2s;
+    }
+    .metric-card:hover {
+        transform: translateY(-5px);
+    }
+    .chart-container {
+        height: 300px;
+    }
+</style>
+{% endblock %}
+
+{% block dashboard_content %}
+<!-- System Overview Cards -->
+<div class="row">
+    <div class="col-md-3">
+        <div class="card mb-4 metric-card border-left-primary">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            CPU Usage
+                        </div>
+                        <div class="h5 mb-0" id="cpu-usage-value">45%</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-microchip fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+                <div class="progress mt-3" style="height: 8px;">
+                    <div class="progress-bar" id="cpu-progress" role="progressbar" style="width: 45%;" 
+                        aria-valuenow="45" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card mb-4 metric-card">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Memory Usage
+                        </div>
+                        <div class="h5 mb-0" id="memory-usage-value">60%</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-memory fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+                <div class="progress mt-3" style="height: 8px;">
+                    <div class="progress-bar bg-success" id="memory-progress" role="progressbar" style="width: 60%;" 
+                        aria-valuenow="60" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card mb-4 metric-card">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Disk Usage
+                        </div>
+                        <div class="h5 mb-0" id="disk-usage-value">32%</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-hdd fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+                <div class="progress mt-3" style="height: 8px;">
+                    <div class="progress-bar bg-info" id="disk-progress" role="progressbar" style="width: 32%;" 
+                        aria-valuenow="32" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card mb-4 metric-card">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Network Traffic
+                        </div>
+                        <div class="h5 mb-0" id="network-traffic-value">2.5 MB/s</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-network-wired fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+                <div class="progress mt-3" style="height: 8px;">
+                    <div class="progress-bar bg-warning" id="network-progress" role="progressbar" style="width: 25%;" 
+                        aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">CPU & Memory Utilization</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="resourceUsageChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Network Traffic</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="networkTrafficChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Info and Services -->
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">System Information</h5>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <tbody>
+                        <tr>
+                            <td><strong>Hostname:</strong></td>
+                            <td id="hostname">printai-server</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Operating System:</strong></td>
+                            <td id="os">Ubuntu 22.04 LTS</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Kernel:</strong></td>
+                            <td id="kernel">5.15.0-41-generic</td>
+                        </tr>
+                        <tr>
+                            <td><strong>CPU:</strong></td>
+                            <td id="cpu">Intel® Core™ i5-10600 (6 cores)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Total Memory:</strong></td>
+                            <td id="total-memory">16 GB</td>
+                        </tr>
+                        <tr>
+                            <td><strong>System Uptime:</strong></td>
+                            <td id="uptime">5 days, 3 hours, 27 minutes</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Service Status</h5>
+                <button class="btn btn-sm btn-outline-primary" id="refresh-services">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Service</th>
+                                <th>Status</th>
+                                <th>Memory</th>
+                                <th>Uptime</th>
+                            </tr>
+                        </thead>
+                        <tbody id="services-table">
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-database me-2 text-primary"></i>
+                                        <div>PostgreSQL</div>
+                                    </div>
+                                </td>
+                                <td><span class="badge bg-success">Running</span></td>
+                                <td>256 MB</td>
+                                <td>5d 3h</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fab fa-python me-2 text-success"></i>
+                                        <div>Django Server</div>
+                                    </div>
+                                </td>
+                                <td><span class="badge bg-success">Running</span></td>
+                                <td>187 MB</td>
+                                <td>5d 2h</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-chart-line me-2 text-warning"></i>
+                                        <div>Prometheus</div>
+                                    </div>
+                                </td>
+                                <td><span class="badge bg-success">Running</span></td>
+                                <td>312 MB</td>
+                                <td>5d 3h</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-network-wired me-2 text-info"></i>
+                                        <div>Traefik</div>
+                                    </div>
+                                </td>
+                                <td><span class="badge bg-success">Running</span></td>
+                                <td>85 MB</td>
+                                <td>5d 3h</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Initialize charts and simulated metrics
+    document.addEventListener('DOMContentLoaded', function() {
+        // Resource Usage Chart
+        const resourceCtx = document.getElementById('resourceUsageChart').getContext('2d');
+        const resourceChart = new Chart(resourceCtx, {
+            type: 'line',
+            data: {
+                labels: generateTimeLabels(12),
+                datasets: [
+                    {
+                        label: 'CPU Usage',
+                        borderColor: '#4e73df',
+                        backgroundColor: 'rgba(78, 115, 223, 0.05)',
+                        data: generateRandomData(30, 60, 12),
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: 'Memory Usage',
+                        borderColor: '#1cc88a',
+                        backgroundColor: 'rgba(28, 200, 138, 0.05)',
+                        data: generateRandomData(50, 70, 12),
+                        tension: 0.3,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                maintainAspectRatio: false,
+                layout: {
+                    padding: {
+                        left: 10,
+                        right: 25,
+                        top: 25,
+                        bottom: 0
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        min: 0,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                }
+            }
+        });
+        
+        // Network Traffic Chart
+        const networkCtx = document.getElementById('networkTrafficChart').getContext('2d');
+        const networkChart = new Chart(networkCtx, {
+            type: 'line',
+            data: {
+                labels: generateTimeLabels(12),
+                datasets: [
+                    {
+                        label: 'Inbound',
+                        borderColor: '#36b9cc',
+                        backgroundColor: 'rgba(54, 185, 204, 0.05)',
+                        data: generateRandomData(1, 5, 12),
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: 'Outbound',
+                        borderColor: '#f6c23e',
+                        backgroundColor: 'rgba(246, 194, 62, 0.05)',
+                        data: generateRandomData(0.5, 3, 12),
+                        tension: 0.3,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                maintainAspectRatio: false,
+                layout: {
+                    padding: {
+                        left: 10,
+                        right: 25,
+                        top: 25,
+                        bottom: 0
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            callback: function(value) {
+                                return value + ' MB/s';
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                }
+            }
+        });
+        
+        // Simulate metric updates
+        setInterval(function() {
+            updateMetrics();
+        }, 2000);
+        
+        // Refresh button click handler
+        document.getElementById('refresh-services').addEventListener('click', function() {
+            this.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Refreshing...';
+            setTimeout(() => {
+                updateServiceStatus();
+                this.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+            }, 1000);
+        });
+    });
+    
+    // Helper Functions
+    function generateTimeLabels(count) {
+        const now = new Date();
+        const labels = [];
+        for (let i = count - 1; i >= 0; i--) {
+            const d = new Date(now.getTime() - i * 5 * 60000);
+            labels.push(d.getHours() + ':' + (d.getMinutes() < 10 ? '0' : '') + d.getMinutes());
+        }
+        return labels;
+    }
+    
+    function generateRandomData(min, max, count) {
+        const data = [];
+        for (let i = 0; i < count; i++) {
+            data.push((Math.random() * (max - min) + min).toFixed(1));
+        }
+        return data;
+    }
+    
+    function updateMetrics() {
+        // Simulate CPU fluctuation
+        let cpuUsage = Math.floor(Math.random() * 20 + 35); // 35% to 55%
+        document.getElementById('cpu-usage-value').textContent = cpuUsage + '%';
+        document.getElementById('cpu-progress').style.width = cpuUsage + '%';
+        document.getElementById('cpu-progress').setAttribute('aria-valuenow', cpuUsage);
+        
+        // Simulate Memory fluctuation
+        let memoryUsage = Math.floor(Math.random() * 15 + 55); // 55% to 70%
+        document.getElementById('memory-usage-value').textContent = memoryUsage + '%';
+        document.getElementById('memory-progress').style.width = memoryUsage + '%';
+        document.getElementById('memory-progress').setAttribute('aria-valuenow', memoryUsage);
+        
+        // Simulate Network fluctuation
+        let networkValue = (Math.random() * 2 + 1.5).toFixed(1); // 1.5 to 3.5 MB/s
+        document.getElementById('network-traffic-value').textContent = networkValue + ' MB/s';
+        let networkPercent = Math.floor(networkValue * 10);
+        document.getElementById('network-progress').style.width = networkPercent + '%';
+        document.getElementById('network-progress').setAttribute('aria-valuenow', networkPercent);
+        
+        // Update uptime
+        const uptime = document.getElementById('uptime');
+        if (uptime) {
+            const parts = uptime.textContent.split(', ');
+            let mins = parseInt(parts[2].split(' ')[0]) + 1;
+            if (mins >= 60) {
+                mins = 0;
+                let hours = parseInt(parts[1].split(' ')[0]) + 1;
+                if (hours >= 24) {
+                    hours = 0;
+                    let days = parseInt(parts[0].split(' ')[0]) + 1;
+                    parts[0] = days + ' days';
+                }
+                parts[1] = hours + ' hours';
+            }
+            parts[2] = mins + ' minutes';
+            uptime.textContent = parts.join(', ');
+        }
+    }
+    
+    function updateServiceStatus() {
+        // This would be replaced with actual API data
+        // For now, we just simulate that all services are running fine
+    }
+</script>
+{% endblock %}

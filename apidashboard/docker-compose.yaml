@@ -1,26 +1,34 @@
 services:
   db:
-    image: postgres:13
+    image: postgres:16
     environment:
       POSTGRES_DB: mydatabase
       POSTGRES_USER: myuser
       POSTGRES_PASSWORD: mypassword
     volumes:
-      - postgres_data_Printai:/var/lib/postgresql/data
+      - new_printai:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     networks:
       - prometheus_network
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "myuser", "-d", "mydatabase"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   web:
     build: .
-    command: python manage.py runserver 0.0.0.0:8000 
+    command: >
+      bash -c "python manage.py migrate --noinput &&
+              python manage.py runserver 0.0.0.0:8000"
     volumes:
       - ./dataportal:/app
     ports:
       - "8000:8000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       - DATABASE_NAME=mydatabase
       - DATABASE_USER=myuser
@@ -79,4 +87,5 @@ networks:
     external: true
 
 volumes:
-  postgres_data_Printai:
+  new_printai:
+    external: true

@@ -5,8 +5,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views import View
-from .models import Profile
-from .forms import ProfileForm
+from .forms import UserProfileForm
+from django.contrib.auth.models import User
 
 
 class SignUpView(View):
@@ -26,12 +26,7 @@ class SignUpView(View):
         form = UserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            # Create a profile for the user
-            Profile.objects.create(
-                user=user,
-                username=user.username,
-                email=user.email if hasattr(user, 'email') else None
-            )
+            # No need to create a profile anymore
             username = form.cleaned_data.get('username')
             messages.success(request, f'Account was created for {username}')
             return redirect('login')
@@ -77,13 +72,11 @@ class UserAccountView(LoginRequiredMixin, View):
     login_url = 'login'
     
     def get(self, request, *args, **kwargs):
-        profile, created = Profile.objects.get_or_create(user=request.user)
-        form = ProfileForm(instance=profile)
+        form = UserProfileForm(instance=request.user)
         return render(request, self.template_name, {'form': form})
         
     def post(self, request, *args, **kwargs):
-        profile, created = Profile.objects.get_or_create(user=request.user)
-        form = ProfileForm(request.POST, instance=profile)
+        form = UserProfileForm(request.POST, instance=request.user)
         if form.is_valid():
             form.save()
             messages.success(request, 'Profile updated successfully')

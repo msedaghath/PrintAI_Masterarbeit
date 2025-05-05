@@ -1,13 +1,13 @@
 from django import forms
-from .models import Profile
+from django.contrib.auth.models import User
 
-class ProfileForm(forms.ModelForm):
+class UserProfileForm(forms.ModelForm):
     """Form for user profile management"""
     class Meta:
-        model = Profile
-        fields = ['name', 'email', 'organization']
+        model = User
+        fields = ['first_name', 'last_name', 'email']
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control'}),
-            'organization': forms.TextInput(attrs={'class': 'form-control'})
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'})
         }

@@ -1,0 +1,26 @@
+{% extends "base/auth_layout.html" %}
+
+{% block title %}Login - PrintAI Dashboard{% endblock %}
+
+{% block auth_title %}Login{% endblock %}
+
+{% block auth_content %}
+<form method="POST" action="">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label for="username" class="form-label">Username</label>
+        <input type="text" class="form-control" id="username" name="username" placeholder="Enter your username" required>
+    </div>
+    <div class="mb-3">
+        <label for="password" class="form-label">Password</label>
+        <input type="password" class="form-control" id="password" name="password" placeholder="Enter your password" required>
+    </div>
+    <div class="d-grid gap-2">
+        <button type="submit" class="btn btn-primary py-2">Login</button>
+    </div>
+</form>
+{% endblock %}
+
+{% block auth_footer %}
+<p class="mb-0">Don't have an account? <a href="{% url 'signup' %}">Sign Up</a></p>
+{% endblock %}
