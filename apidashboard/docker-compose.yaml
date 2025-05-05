@@ -34,6 +34,8 @@ services:
     image: prom/prometheus
     volumes:
       - ./dynamic/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus 
+
     ports:
       - "9090:9090"
     networks:
@@ -45,28 +47,6 @@ services:
       - "traefik.http.routers.prometheus.tls=true"
       - "traefik.http.routers.prometheus.tls.certresolver=default"
 
-  grafana:
-    image: grafana/grafana
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-    ports:
-      - "3000:3000"
-    depends_on:
-      - prometheus
-    networks:
-      - prometheus_network
-    volumes:
-      - ./grafana/provisioning:/etc/grafana/provisioning
-      - ./grafana/provisioning/dashboards:/var/lib/grafana/dashboards
-      - ./grafana/grafana.ini:/etc/grafana/grafana.ini
-
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.grafana.rule=PathPrefix(`/grafana`)"
-      - "traefik.http.routers.grafana.entrypoints=websecure"
-      - "traefik.http.routers.grafana.tls=true"
-      - "traefik.http.routers.grafana.tls.certresolver=default"
 
   traefik:
     image: traefik:latest
@@ -92,6 +72,7 @@ services:
       - "traefik.http.routers.grafana.tls.certresolver=default"
       - "traefik.http.routers.prometheus.tls=true"
       - "traefik.http.routers.prometheus.tls.certresolver=default"
+
 
 networks:
   prometheus_network:
