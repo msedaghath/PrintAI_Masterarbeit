@@ -30,22 +30,22 @@ services:
     networks:
       - prometheus_network
 
-  prometheus:
-    image: prom/prometheus
-    volumes:
-      - ./dynamic/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus 
+  # prometheus:
+  #   image: prom/prometheus
+  #   volumes:
+  #     - ./dynamic/prometheus.yml:/etc/prometheus/prometheus.yml
+  #     - prometheus_data:/prometheus 
 
-    ports:
-      - "9090:9090"
-    networks:
-      - prometheus_network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.prometheus.rule=PathPrefix(`/prometheus`)"
-      - "traefik.http.routers.prometheus.entrypoints=websecure"
-      - "traefik.http.routers.prometheus.tls=true"
-      - "traefik.http.routers.prometheus.tls.certresolver=default"
+  #   ports:
+  #     - "9090:9090"
+  #   networks:
+  #     - prometheus_network
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.prometheus.rule=PathPrefix(`/prometheus`)"
+  #     - "traefik.http.routers.prometheus.entrypoints=websecure"
+  #     - "traefik.http.routers.prometheus.tls=true"
+  #     - "traefik.http.routers.prometheus.tls.certresolver=default"
 
 
   traefik:

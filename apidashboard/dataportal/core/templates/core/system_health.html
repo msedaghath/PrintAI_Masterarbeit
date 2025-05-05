@@ -1,0 +1,133 @@
+{% extends 'portal/overall_temp/template.html' %}
+
+{% block title %}System Health{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>System Health</h2>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Service Status</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Service</th>
+                            <th>Status</th>
+                            <th>Info</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for service_name, status in services.items %}
+                            <tr>
+                                <td>{{ service_name|title }}</td>
+                                <td>
+                                    {% if status %}
+                                        <span class="badge bg-success">Online</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Offline</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if service_name == 'prometheus' %}
+                                        Metrics collection service
+                                    {% elif service_name == 'grafana' %}
+                                        Monitoring dashboard
+                                    {% elif service_name == 'octoprint' %}
+                                        Printer control software
+                                    {% else %}
+                                        Auxiliary service
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- System Resources -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>System Resources</h4>
+                </div>
+                <div class="card-body">
+                    <p><strong>CPU Usage:</strong> <span id="cpu-usage">Fetching...</span></p>
+                    <div class="progress mb-3">
+                        <div id="cpu-progress" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                    </div>
+                    
+                    <p><strong>Memory Usage:</strong> <span id="memory-usage">Fetching...</span></p>
+                    <div class="progress mb-3">
+                        <div id="memory-progress" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                    </div>
+                    
+                    <p><strong>Disk Usage:</strong> <span id="disk-usage">Fetching...</span></p>
+                    <div class="progress">
+                        <div id="disk-progress" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Last Events -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Recent Events</h4>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            System started
+                            <span class="badge bg-info rounded-pill">1 day ago</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            All services healthy
+                            <span class="badge bg-info rounded-pill">1 hour ago</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Database backup completed
+                            <span class="badge bg-info rounded-pill">30 min ago</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Simulate fetching system resources data
+    window.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+            // CPU usage simulation
+            const cpuUsage = Math.floor(Math.random() * 60) + 10;
+            document.getElementById('cpu-usage').textContent = cpuUsage + '%';
+            document.getElementById('cpu-progress').style.width = cpuUsage + '%';
+            document.getElementById('cpu-progress').textContent = cpuUsage + '%';
+            document.getElementById('cpu-progress').setAttribute('aria-valuenow', cpuUsage);
+            
+            // Memory usage simulation
+            const memoryUsage = Math.floor(Math.random() * 40) + 20;
+            document.getElementById('memory-usage').textContent = memoryUsage + '%';
+            document.getElementById('memory-progress').style.width = memoryUsage + '%';
+            document.getElementById('memory-progress').textContent = memoryUsage + '%';
+            document.getElementById('memory-progress').setAttribute('aria-valuenow', memoryUsage);
+            
+            // Disk usage simulation
+            const diskUsage = Math.floor(Math.random() * 30) + 40;
+            document.getElementById('disk-usage').textContent = diskUsage + '%';
+            document.getElementById('disk-progress').style.width = diskUsage + '%';
+            document.getElementById('disk-progress').textContent = diskUsage + '%';
+            document.getElementById('disk-progress').setAttribute('aria-valuenow', diskUsage);
+        }, 800);
+    });
+</script>
+{% endblock %}

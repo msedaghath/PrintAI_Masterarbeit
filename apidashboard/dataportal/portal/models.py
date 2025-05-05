@@ -21,7 +21,7 @@ def validate_ip_or_url(value):
 #Models are here 
 class Profile(models.Model):
     user = models.OneToOneField(
-        User, on_delete=models.CASCADE, null=True, blank=True)
+        User, on_delete=models.CASCADE, null=True, blank=True, related_name='portal_profile')
     name = models.CharField(max_length=200, blank=True, null=True)
     email = models.EmailField(max_length=500, blank=True, null=True)
     username = models.CharField(max_length=200, blank=True, null=True)
@@ -41,7 +41,7 @@ class Printer(models.Model):
     printing = models.BooleanField(default=False)
     class Meta:
         unique_together = (('ip_address', 'api_key'),)
-    
+
 
 
 
